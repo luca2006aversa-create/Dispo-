@@ -167,6 +167,8 @@ nav.tabs a[aria-current="page"] { color: var(--ink); background: var(--chip); }
   86%  { transform: perspective(900px) translate3d(0, 0, 10px) rotateX(-5deg); }
   100% { transform: none; }
 }
+/* Pendant l'entrée, la page ne défile pas (les blocs géants agrandiraient la zone de défilement). */
+html.entree { overflow: hidden; overflow-anchor: none; }
 @keyframes descend { from { opacity: 0; transform: translateY(-120%); } }
 @keyframes monte { from { opacity: 0; transform: translateY(120%); } }
 @media (prefers-reduced-motion: no-preference) {
