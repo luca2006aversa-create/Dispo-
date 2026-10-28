@@ -1,12 +1,25 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { Suspense, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { supabaseBrowser } from '@/lib/supabase/client';
+import { joinWithCode } from './actions';
 
-export default function Connexion() {
+export default function ConnexionPage() {
+  return (
+    <Suspense>
+      <Connexion />
+    </Suspense>
+  );
+}
+
+function Connexion() {
   const router = useRouter();
+  const params = useSearchParams();
   const [email, setEmail] = useState('');
+  // Lien d'invitation : /connexion?invitation=K7QF-3XMA remplit le code tout seul.
+  const [invite, setInvite] = useState(() => params.get('invitation') ?? '');
+  const [showInvite, setShowInvite] = useState(() => !!params.get('invitation'));
   const [code, setCode] = useState('');
   const [step, setStep] = useState<'email' | 'code'>('email');
   const [busy, setBusy] = useState(false);
@@ -16,14 +29,24 @@ export default function Connexion() {
     e.preventDefault();
     setBusy(true);
     setError('');
+    if (invite.trim()) {
+      const joined = await joinWithCode(email, invite);
+      if (!joined.ok) {
+        setBusy(false);
+        setError(joined.message ?? "Ce code d'invitation ne marche pas.");
+        return;
+      }
+    }
     const { error } = await supabaseBrowser().auth.signInWithOtp({
       email: email.trim(),
       options: { shouldCreateUser: false },
     });
     setBusy(false);
     if (error) {
-      setError(/signup|not found|not allowed/i.test(error.message)
-        ? "Cette adresse n'est pas invitée. Demande à Luca de t'ajouter."
+      const notInvited = /signup|not found|not allowed/i.test(error.message);
+      if (notInvited) setShowInvite(true);
+      setError(notInvited
+        ? "Cette adresse n'est pas encore inscrite. Entre le code d'invitation que Luca t'a donné."
         : /rate|seconds/i.test(error.message)
           ? 'Trop de demandes : attends une minute avant de redemander un code.'
           : "L'e-mail n'est pas parti. Réessaie dans un instant.");
@@ -65,6 +88,18 @@ export default function Connexion() {
               <input id="email" type="email" required autoComplete="email" inputMode="email"
                 value={email} onChange={e => setEmail(e.target.value)} placeholder="prenom@exemple.fr" />
             </label>
+            {showInvite ? (
+              <label htmlFor="invite">
+                Code d&apos;invitation (première fois seulement)
+                <input id="invite" type="text" autoCapitalize="characters" autoComplete="off" maxLength={20}
+                  value={invite} onChange={e => setInvite(e.target.value)} placeholder="K7QF-3XMA"
+                  style={{ letterSpacing: '.12em', fontWeight: 700 }} />
+              </label>
+            ) : (
+              <button className="btn ghost sm" type="button" onClick={() => setShowInvite(true)}>
+                Première fois ? J&apos;ai un code d&apos;invitation
+              </button>
+            )}
             <button className="btn flame" type="submit" disabled={busy}>
               {busy ? 'Envoi…' : 'Recevoir mon code'}
             </button>

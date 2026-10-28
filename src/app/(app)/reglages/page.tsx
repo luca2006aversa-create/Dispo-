@@ -7,6 +7,7 @@ import { Dot } from '@/components/Dot';
 import { ProfileForm } from '@/components/ProfileForm';
 import { supabaseBrowser } from '@/lib/supabase/client';
 import { invite } from './actions';
+import { InviteCode } from './InviteCode';
 
 type Theme = 'auto' | 'light' | 'dark';
 
@@ -72,6 +73,7 @@ export default function Reglages() {
             </div>
           ))}
         </div>
+        {me.role === 'admin' && <InviteCode />}
         {me.role === 'admin' && (
           <form className="card" onSubmit={sendInvite}>
             <label htmlFor="inv">

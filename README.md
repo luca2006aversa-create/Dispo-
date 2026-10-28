@@ -17,6 +17,7 @@ Compte environ 45 minutes la première fois. Tu n'as besoin de rien installer de
    - Région : **West EU (Paris)** ou **Central EU (Frankfurt)**.
 2. Une fois le projet prêt, ouvre **SQL Editor** (menu de gauche), clique **New query**, colle tout le contenu du fichier
    `supabase/migrations/20261028000001_init.sql`, puis **Run**. Tu dois voir « Success ». Cela crée les tables, les règles de sécurité et l'espace de stockage des photos.
+   Fais de même, dans une nouvelle requête, avec chaque fichier suivant du dossier `supabase/migrations/`, dans l'ordre (un seul passage par fichier).
 3. Ouvre **Project Settings > API Keys** et note :
    - l'**URL du projet** (`https://xxxx.supabase.co`, aussi dans **Project Settings > Data API**) ;
    - la **Publishable key** (`sb_publishable_…`) ;
@@ -75,8 +76,10 @@ Dans Supabase, menu **Authentication** :
 ### 6. Premier lancement et invitations
 
 1. Ouvre l'adresse Vercel sur ton téléphone, entre ton e-mail, tape le code reçu, remplis ton profil (prénom, couleur, ville ; le fuseau est détecté tout seul).
-2. Touche ta pastille en haut à droite (**Réglages**), puis **Inviter quelqu'un** : ajoute l'adresse de Gaïa, d'Emma et du copain de Gaïa.
-3. Envoie-leur l'adresse de l'app. Chacun entre son e-mail, reçoit son code, remplit son profil. Le copain choisit lui-même son prénom.
+2. Touche ta pastille en haut à droite (**Réglages**). Deux façons d'inviter :
+   - **Code d'invitation** : **Créer un code**, puis **Partager le lien**. Tes potes ouvrent le lien, entrent leur e-mail et leur compte est créé. Si le code circule trop, **Changer le code** désactive l'ancien.
+   - **Par adresse e-mail** : **Inviter quelqu'un**, puis envoie-leur l'adresse de l'app.
+3. Chacun reçoit un code à 6 chiffres par e-mail, le tape, puis remplit son profil. Le copain de Gaïa choisit lui-même son prénom.
 4. Pour l'installer : sur iPhone, dans Safari, bouton **Partager** puis **Sur l'écran d'accueil** ; sur Android, menu **⋮** de Chrome puis **Installer l'application**.
 
 ---
