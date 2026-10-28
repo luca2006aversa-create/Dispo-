@@ -157,3 +157,33 @@ nav.tabs a[aria-current="page"] { color: var(--ink); background: var(--chip); }
 .big-logo span { color: var(--flame); display: inline-block; transform: rotate(12deg); }
 
 .toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(84px + env(safe-area-inset-bottom, 0px)); z-index: 30; background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 12px; font-weight: 600; max-width: calc(100% - 32px); }
+
+/* Entrée dans l'app : chaque bloc arrive de derrière nous, passe en grand devant les yeux
+   puis se pose à plat comme sur une table. Jouée une fois par ouverture de l'app. */
+@keyframes atterrit {
+  0%   { opacity: 0; filter: blur(10px); transform: perspective(900px) translate3d(0, 18vh, 720px) rotateX(-35deg) rotateZ(var(--tilt, 4deg)); }
+  35%  { opacity: 1; filter: blur(0);    transform: perspective(900px) translate3d(0, 4vh, 320px) rotateX(-12deg) rotateZ(calc(var(--tilt, 4deg) / 2)); }
+  70%  { transform: perspective(900px) translate3d(0, 0, -40px) rotateX(24deg); }
+  86%  { transform: perspective(900px) translate3d(0, 0, 10px) rotateX(-5deg); }
+  100% { transform: none; }
+}
+@keyframes descend { from { opacity: 0; transform: translateY(-120%); } }
+@keyframes monte { from { opacity: 0; transform: translateY(120%); } }
+@media (prefers-reduced-motion: no-preference) {
+  .entree .tab > *, .entree .feed > * {
+    animation: atterrit .95s cubic-bezier(.2, .7, .25, 1) backwards;
+    transform-origin: 50% 100%;
+    will-change: transform, opacity, filter;
+  }
+  .entree .tab > :nth-child(1) { animation-delay: .15s; --tilt: -5deg; }
+  .entree .tab > :nth-child(2) { animation-delay: .32s; --tilt: 6deg; }
+  .entree .tab > :nth-child(3) { animation-delay: .49s; --tilt: -4deg; }
+  .entree .tab > :nth-child(4) { animation-delay: .66s; --tilt: 5deg; }
+  .entree .tab > :nth-child(5) { animation-delay: .83s; --tilt: -6deg; }
+  .entree .tab > :nth-child(n+6) { animation-delay: 1s; }
+  .entree .feed > :nth-child(1) { animation-delay: .7s; }
+  .entree .feed > :nth-child(2) { animation-delay: .85s; }
+  .entree .feed > :nth-child(n+3) { animation-delay: 1s; }
+  .entree header.top { animation: descend .6s cubic-bezier(.2, .7, .25, 1) backwards; }
+  .entree nav.tabs { animation: monte .6s .9s cubic-bezier(.2, .7, .25, 1) backwards; }
+}
