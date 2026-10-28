@@ -30,3 +30,17 @@ export async function compressImage(file: File, maxSide = 1600, maxBytes = 450_0
   if (!out) throw new Error('compression impossible');
   return out;
 }
+
+/** Photo de profil : recadrée au carré (centre de l'image), `size` px de côté, en JPEG. */
+export async function compressSquare(file: File, size = 400): Promise<Blob> {
+  const img = await loadImage(file);
+  const side = Math.min(img.naturalWidth, img.naturalHeight);
+  const canvas = document.createElement('canvas');
+  canvas.width = canvas.height = Math.min(size, side);
+  canvas.getContext('2d')!.drawImage(
+    img, (img.naturalWidth - side) / 2, (img.naturalHeight - side) / 2, side, side, 0, 0, canvas.width, canvas.height,
+  );
+  const out = await new Promise<Blob | null>(r => canvas.toBlob(r, 'image/jpeg', 0.85));
+  if (!out) throw new Error('compression impossible');
+  return out;
+}

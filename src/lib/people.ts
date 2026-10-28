@@ -6,6 +6,8 @@ export type Profile = {
   color: string;
   city: string;
   timezone: string;
+  /** Photo de profil dans le stockage, si la personne en a mis une. */
+  avatar_path?: string | null;
 };
 
 export type Member = Profile & { role: 'admin' | 'member'; joined_at: string };

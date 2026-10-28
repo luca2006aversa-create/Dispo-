@@ -20,6 +20,8 @@ type Ctx = {
   /** Jours locaux où chaque personne a posté (pour les flammes). */
   postedDays: Record<string, Set<string>>;
   customDefis: string[];
+  /** Adresse (temporaire) de la photo de profil de chaque personne qui en a une. */
+  avatars: Record<string, string>;
   now: number;
   reload: (what?: 'avails' | 'photos' | 'defis') => Promise<void>;
   toast: (msg: string) => void;
@@ -27,6 +29,11 @@ type Ctx = {
 
 const AppCtx = createContext<Ctx | null>(null);
 export const useApp = () => useContext(AppCtx)!;
+/** Photo de profil d'une personne, ou rien (aussi hors de l'app, sur l'écran de bienvenue). */
+export function useAvatar(id?: string) {
+  const ctx = useContext(AppCtx);
+  return id ? ctx?.avatars[id] : undefined;
+}
 
 const PHOTO_LIMIT = 60;
 
@@ -37,6 +44,7 @@ export function AppProvider({ me, groupId, members, children }: {
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [postedDays, setPostedDays] = useState<Record<string, Set<string>>>({});
   const [customDefis, setCustomDefis] = useState<string[]>([]);
+  const [avatars, setAvatars] = useState<Record<string, string>>({});
   const [now, setNow] = useState(() => Date.now());
   const [toastMsg, setToastMsg] = useState('');
   const toastTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -112,10 +120,21 @@ export function AppProvider({ me, groupId, members, children }: {
     };
   }, [groupId, reload, loadAvails, loadPhotos, loadDefis]);
 
+  useEffect(() => {
+    const withPhoto = members.filter(m => m.avatar_path);
+    (withPhoto.length
+      ? supabaseBrowser().storage.from('photos').createSignedUrls(withPhoto.map(m => m.avatar_path!), 60 * 60 * 6)
+      : Promise.resolve({ data: [] as { path: string | null; signedUrl: string }[] }))
+      .then(({ data }) => {
+        const url = new Map((data ?? []).map(s => [s.path, s.signedUrl]));
+        setAvatars(Object.fromEntries(withPhoto.map(m => [m.id, url.get(m.avatar_path!) ?? ''])));
+      });
+  }, [members]);
+
   const value = useMemo<Ctx>(() => ({
     me, groupId, members, byId: Object.fromEntries(members.map(m => [m.id, m])),
-    avails, photos, postedDays, customDefis, now, reload, toast,
-  }), [me, groupId, members, avails, photos, postedDays, customDefis, now, reload, toast]);
+    avails, photos, postedDays, customDefis, avatars, now, reload, toast,
+  }), [me, groupId, members, avails, photos, postedDays, customDefis, avatars, now, reload, toast]);
 
   return (
     <AppCtx.Provider value={value}>

@@ -8,6 +8,7 @@ import { ProfileForm } from '@/components/ProfileForm';
 import { supabaseBrowser } from '@/lib/supabase/client';
 import { invite } from './actions';
 import { InviteCode } from './InviteCode';
+import { AvatarPicker } from './AvatarPicker';
 
 type Theme = 'auto' | 'light' | 'dark';
 
@@ -51,6 +52,7 @@ export default function Reglages() {
     <section className="tab">
       <div className="block">
         <h1>Mon profil</h1>
+        <AvatarPicker />
         <ProfileForm userId={me.id} initial={me} />
       </div>
 
