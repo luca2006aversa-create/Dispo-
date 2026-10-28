@@ -70,7 +70,7 @@ export default function Reglages() {
         <div className="list">
           {members.map(m => (
             <div key={m.id} className="item">
-              <Dot p={m} size={28} />
+              <Dot p={m} size={28} zoom />
               <div className="grow"><b>{m.first_name}</b> <span className="small muted">{m.city}{m.role === 'admin' ? ' · admin' : ''}</span></div>
             </div>
           ))}

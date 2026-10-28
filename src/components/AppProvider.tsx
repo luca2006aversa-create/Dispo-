@@ -3,6 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { supabaseBrowser } from '@/lib/supabase/client';
 import type { Member } from '@/lib/people';
+import { AvatarZoom } from './AvatarZoom';
 
 export type Avail = { id: string; user_id: string; start: number; end: number; note: string };
 export type Photo = {
@@ -22,6 +23,8 @@ type Ctx = {
   customDefis: string[];
   /** Adresse (temporaire) de la photo de profil de chaque personne qui en a une. */
   avatars: Record<string, string>;
+  /** Affiche en grand la photo de profil d'une personne. */
+  zoomAvatar: (id: string) => void;
   now: number;
   reload: (what?: 'avails' | 'photos' | 'defis') => Promise<void>;
   toast: (msg: string) => void;
@@ -34,6 +37,7 @@ export function useAvatar(id?: string) {
   const ctx = useContext(AppCtx);
   return id ? ctx?.avatars[id] : undefined;
 }
+export const useZoomAvatar = () => useContext(AppCtx)?.zoomAvatar;
 
 const PHOTO_LIMIT = 60;
 
@@ -45,6 +49,7 @@ export function AppProvider({ me, groupId, members, children }: {
   const [postedDays, setPostedDays] = useState<Record<string, Set<string>>>({});
   const [customDefis, setCustomDefis] = useState<string[]>([]);
   const [avatars, setAvatars] = useState<Record<string, string>>({});
+  const [zoomed, setZoomed] = useState<string | null>(null);
   const [now, setNow] = useState(() => Date.now());
   const [toastMsg, setToastMsg] = useState('');
   const toastTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -133,13 +138,16 @@ export function AppProvider({ me, groupId, members, children }: {
 
   const value = useMemo<Ctx>(() => ({
     me, groupId, members, byId: Object.fromEntries(members.map(m => [m.id, m])),
-    avails, photos, postedDays, customDefis, avatars, now, reload, toast,
+    avails, photos, postedDays, customDefis, avatars, zoomAvatar: setZoomed, now, reload, toast,
   }), [me, groupId, members, avails, photos, postedDays, customDefis, avatars, now, reload, toast]);
 
   return (
     <AppCtx.Provider value={value}>
       {children}
       {toastMsg && <div className="toast" role="status">{toastMsg}</div>}
+      {zoomed && avatars[zoomed] && (
+        <AvatarZoom url={avatars[zoomed]} person={members.find(m => m.id === zoomed)} onClose={() => setZoomed(null)} />
+      )}
     </AppCtx.Provider>
   );
 }

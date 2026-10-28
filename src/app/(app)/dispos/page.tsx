@@ -86,7 +86,7 @@ export default function Dispos() {
             const other = p.timezone !== me.timezone;
             return (
               <div key={a.id} className="item">
-                <Dot p={p} size={28} />
+                <Dot p={p} size={28} zoom />
                 <div className="grow">
                   <b>{fmtDay(a.start, me.timezone)}, {fmtTime(a.start, me.timezone)} – {fmtTime(a.end, me.timezone)}</b>
                   <div className="small muted">

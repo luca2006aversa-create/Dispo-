@@ -77,7 +77,7 @@ export default function Accueil() {
             const s = statusOf(m, avails, now);
             return (
               <div key={m.id} className="now">
-                <Dot p={m} size={34} />
+                <Dot p={m} size={34} zoom />
                 <div className="what">
                   <b>{s.label}</b>
                   <span className="small muted">{m.first_name}{m.city ? ` à ${m.city}` : ''}{s.sub ? ' · ' + s.sub : ''}</span>

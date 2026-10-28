@@ -53,7 +53,7 @@ export function AvatarPicker() {
 
   return (
     <div className="card" style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
-      <Dot p={me} size={72} />
+      <Dot p={me} size={72} zoom />
       <div className="block" style={{ gap: 8, flex: 1, minWidth: 0 }}>
         <b>Ta photo de profil</b>
         <div className="row" style={{ gap: 6 }}>

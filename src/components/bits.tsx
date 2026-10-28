@@ -26,7 +26,7 @@ export function SlotCard({ slot, me, byId, everyone }: {
   }
   return (
     <div className={`slot${everyone ? ' all' : ''}`}>
-      <div className="faces">{people.map(p => <Dot key={p.id} p={p} size={30} />)}</div>
+      <div className="faces">{people.map(p => <Dot key={p.id} p={p} size={30} zoom />)}</div>
       <div style={{ minWidth: 0 }}>
         <div className="when">
           {fmtDay(slot.start, tz)}, {fmtTime(slot.start, tz)} – {fmtTime(slot.end, tz)}

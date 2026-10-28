@@ -155,7 +155,7 @@ function Photos() {
               {ph.caption && <div className="cap">{ph.caption}</div>}
               <div className="meta">
                 <span className="row" style={{ gap: 6 }}>
-                  <Dot p={who} size={22} />
+                  <Dot p={who} size={22} zoom />
                   <span>{who?.first_name} · {fmtDay(ph.created, me.timezone)}, {fmtTime(ph.created, me.timezone)}</span>
                 </span>
                 {ph.user_id === me.id && <ConfirmButton label="Supprimer" onConfirm={() => removePhoto(ph.id, ph.path)} />}
