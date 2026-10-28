@@ -21,7 +21,7 @@ export const viewport: Viewport = {
 };
 
 // Avant le premier affichage : applique le thème choisi et prépare l'animation d'entrée (une fois par ouverture).
-const themeScript = `try{var t=localStorage.getItem('theme');if(t==='light'||t==='dark')document.documentElement.dataset.theme=t;var u=location.pathname;if(u.indexOf('/connexion')!==0&&u.indexOf('/bienvenue')!==0&&!sessionStorage.getItem('entree-jouee')){sessionStorage.setItem('entree-jouee','1');document.documentElement.classList.add('entree')}}catch(e){}`;
+const themeScript = `try{var t=localStorage.getItem('theme');if(t==='light'||t==='dark')document.documentElement.dataset.theme=t;var u=location.pathname;if(u.indexOf('/connexion')!==0&&u.indexOf('/bienvenue')!==0&&!sessionStorage.getItem('entree-jouee')){sessionStorage.setItem('entree-jouee','1');document.documentElement.classList.add('entree','entree-app')}}catch(e){}`;
 
 export default function RootLayout({ children }: LayoutProps<'/'>) {
   return (

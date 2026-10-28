@@ -1,17 +1,31 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useLayoutEffect, useRef } from 'react';
+import { usePathname } from 'next/navigation';
 
-/** Retire la classe `entree` (posée par le script de tête) une fois l'animation d'entrée jouée. */
+const DUREE_MS = 2000;
+
+/**
+ * Animation d'entrée : à l'ouverture de l'app (classes posées par le script de tête)
+ * puis à chaque changement d'onglet. Posée avant l'affichage de la nouvelle page pour éviter tout clignotement.
+ */
 export function Entrance() {
-  useEffect(() => {
-    // Les blocs agrandis pendant l'animation font défiler la page : on revient en haut au début et à la fin.
+  const path = usePathname();
+  const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
+
+  useLayoutEffect(() => {
+    const html = document.documentElement;
+    html.classList.add('entree');
+    // Les blocs agrandis pendant l'animation feraient défiler la page : on reste en haut.
     window.scrollTo(0, 0);
-    const t = setTimeout(() => {
-      document.documentElement.classList.remove('entree');
+    clearTimeout(timer.current);
+    timer.current = setTimeout(() => {
+      html.classList.remove('entree', 'entree-app');
       window.scrollTo(0, 0);
-    }, 2600);
-    return () => clearTimeout(t);
-  }, []);
+    }, DUREE_MS);
+  }, [path]);
+
+  useLayoutEffect(() => () => clearTimeout(timer.current), []);
+
   return null;
 }
