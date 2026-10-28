@@ -84,7 +84,7 @@ export default function Connexion() {
                 placeholder="123456" style={{ letterSpacing: '.2em', fontWeight: 700 }} />
             </label>
             <button className="btn flame" type="submit" disabled={busy}>
-              {busy ? 'Vérification…' : "C&apos;est parti"}
+              {busy ? 'Vérification…' : 'C’est parti'}
             </button>
             <button className="btn ghost sm" type="button" onClick={() => { setStep('email'); setCode(''); setError(''); }}>
               Changer d&apos;adresse ou renvoyer un code
