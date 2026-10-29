@@ -23,22 +23,26 @@ export const isEmail = (s: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s);
  * À n'appeler qu'après avoir vérifié le droit d'ajouter (admin ou code d'invitation valide).
  */
 export async function addMember(groupId: string, email: string): Promise<boolean> {
-  const admin = supabaseAdmin();
-  let userId: string | undefined;
-  const created = await admin.auth.admin.createUser({ email, email_confirm: true });
-  if (created.data.user) {
-    userId = created.data.user.id;
-  } else {
-    // Le compte existe peut-être déjà (invité dans un autre groupe) : on le retrouve.
-    for (let page = 1; page <= 10 && !userId; page++) {
-      const { data } = await admin.auth.admin.listUsers({ page, perPage: 200 });
-      userId = data?.users.find(u => u.email?.toLowerCase() === email)?.id;
-      if (!data || data.users.length < 200) break;
-    }
-  }
-  if (!userId) return false;
+  const created = await supabaseAdmin().auth.admin.createUser({ email, email_confirm: true });
+  // Le compte existe peut-être déjà (invité dans un autre groupe) : on le retrouve.
+  const userId = created.data.user?.id ?? await findUserIdByEmail(email);
+  return !!userId && joinGroup(groupId, userId);
+}
 
-  const { error } = await admin.from('group_members').upsert(
+/** Identifiant du compte qui a cette adresse e-mail, s'il existe. */
+export async function findUserIdByEmail(email: string): Promise<string | undefined> {
+  const admin = supabaseAdmin();
+  for (let page = 1; page <= 10; page++) {
+    const { data } = await admin.auth.admin.listUsers({ page, perPage: 200 });
+    const hit = data?.users.find(u => u.email?.toLowerCase() === email);
+    if (hit) return hit.id;
+    if (!data || data.users.length < 200) return undefined;
+  }
+}
+
+/** Ajoute la personne au groupe (sans effet si elle y est déjà). */
+export async function joinGroup(groupId: string, userId: string): Promise<boolean> {
+  const { error } = await supabaseAdmin().from('group_members').upsert(
     { group_id: groupId, user_id: userId, role: 'member' },
     { onConflict: 'group_id,user_id', ignoreDuplicates: true },
   );
