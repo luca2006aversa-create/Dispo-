@@ -128,3 +128,15 @@ function hash(s: string): number {
 export function defiOfDay(day: string, offset = 0, list: string[] = DEFIS): string {
   return list[(hash(day) + offset * 7919) % list.length];
 }
+
+/** Défis des derniers jours avant un départ en vacances (remplacent le défi du jour). */
+export const TRIP_DEFIS: string[] = [
+  'Ta valise, ouverte, telle quelle',
+  "L'objet que tu emportes et dont personne n'aura besoin",
+  'Ta tête de « je suis déjà en vacances »',
+  'Ton look de voyage, posé comme un défilé',
+  'Le truc que tu vas forcément oublier (montre-le avant)',
+  'Ta playlist de route, en une seule pochette',
+  'Une photo qui résume ce que tu attends le plus du voyage',
+  'Ton coin préféré de chez toi, à qui tu dis au revoir',
+];

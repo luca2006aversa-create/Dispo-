@@ -103,7 +103,7 @@ Objectif : une app en ligne que Gaïa peut ouvrir et installer ce soir, puis on 
 
 Choix validés : connexion par code à 6 chiffres, e-mails via Brevo, compte à rebours = projets décidés + dates libres.
 
-## 7. Projets de vacances : pistes (2 novembre)
+## 7. Projets de vacances (construit le 2 novembre)
 
 Le socle prévu : propositions avec photos, « Ça me tente », commentaires, « On part là ! », puis checklist et compte à rebours. Ce qui le rendrait propre à vous, avec une famille éparpillée entre la France et le Vietnam :
 

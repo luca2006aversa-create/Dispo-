@@ -22,7 +22,7 @@ export default function PhotosPage() {
 }
 
 function Photos() {
-  const { me, byId, photos, groupId, customDefis, now, reload, toast } = useApp();
+  const { me, byId, photos, groupId, customDefis, now, reload, toast, projects } = useApp();
   const params = useSearchParams();
   const [chosen, setDefi] = useState<string | null>(null);
   // Photo déjà prise depuis l'accueil (bouton caméra du défi), s'il y en a une.
@@ -40,6 +40,11 @@ function Photos() {
   useEffect(() => { setPendingPhoto(null); }, []);
 
   const defi = chosen ?? params.get('defi') ?? defiOfDay(dayKey(now, me.timezone));
+  // Album : choisi à la main, sinon celui du lien (?projet=…), sinon le voyage en cours.
+  const today = dayKey(now, me.timezone);
+  const ongoing = projects.find(p => p.place && p.starts_on && p.starts_on <= today && (!p.ends_on || today <= p.ends_on));
+  const [albumPick, setAlbum] = useState<string | null>(null);
+  const album = albumPick ?? params.get('projet') ?? ongoing?.id ?? '';
 
   useEffect(() => () => { if (preview) URL.revokeObjectURL(preview); }, [preview]);
 
@@ -74,7 +79,7 @@ function Photos() {
     }
     const { error } = await sb.from('photos').insert({
       group_id: groupId, path, caption: caption.trim(), challenge: defi,
-      local_day: dayKey(Date.now(), me.timezone),
+      local_day: dayKey(Date.now(), me.timezone), ...(album ? { project_id: album } : {}),
     });
     setBusy(false);
     if (error) {
@@ -144,6 +149,15 @@ function Photos() {
           aria-label="Choisir une photo dans la galerie" onChange={e => pick(e.target.files?.[0])} />
         {/* eslint-disable-next-line @next/next/no-img-element */}
         {preview && <img src={preview} className="preview" alt="Aperçu de ta photo" />}
+        {projects.length > 0 && (
+          <label htmlFor="p-album">
+            Ranger aussi dans l&apos;album d&apos;un projet
+            <select id="p-album" value={album} onChange={e => setAlbum(e.target.value)}>
+              <option value="">Non, juste le fil</option>
+              {projects.map(p => <option key={p.id} value={p.id}>{p.title}</option>)}
+            </select>
+          </label>
+        )}
         <label htmlFor="p-cap">
           Légende
           <input id="p-cap" maxLength={120} value={caption} onChange={e => setCaption(e.target.value)} placeholder="Raconte en deux mots" />

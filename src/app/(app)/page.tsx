@@ -8,14 +8,15 @@ import { Dot } from '@/components/Dot';
 import { FlameIcon, SlotCard, statusOf } from '@/components/bits';
 import { commonSlots } from '@/lib/slots';
 import { flame } from '@/lib/flames';
-import { defiOfDay, DEFIS } from '@/lib/defis';
+import { defiOfDay, DEFIS, TRIP_DEFIS } from '@/lib/defis';
+import { daysUntil } from '@/lib/projects';
 import { colorVar, plain } from '@/lib/people';
 import { compressImage } from '@/lib/compress';
 import { setPendingPhoto } from '@/lib/pendingPhoto';
 import { dayKey, fmtTime } from '@/lib/time';
 
 export default function Accueil() {
-  const { me, members, byId, avails, postedDays, customDefis, now } = useApp();
+  const { me, members, byId, avails, postedDays, customDefis, projects, now } = useApp();
   const router = useRouter();
   const [offset, setOffset] = useState(0);
   const camera = useRef<HTMLInputElement>(null);
@@ -28,7 +29,17 @@ export default function Accueil() {
   }
 
   const today = dayKey(now, me.timezone);
-  const defi = offset === 0 ? defiOfDay(today) : defiOfDay(today, offset, [...DEFIS, ...customDefis]);
+  // Prochain voyage décidé (« On part là ! » et une date de départ), en cours ou à venir.
+  const trip = projects
+    .filter(p => p.place && p.starts_on)
+    .map(p => ({ ...p, left: daysUntil(p.starts_on, today)!, over: !!p.ends_on && p.ends_on < today }))
+    .filter(p => p.left >= 0 || (!p.over && p.ends_on))
+    .sort((a, b) => a.left - b.left)[0];
+  // Les 3 derniers jours avant le départ, le défi du jour devient un défi spécial voyage.
+  const tripSoon = trip && trip.left >= 0 && trip.left <= 3;
+  const defi = offset === 0
+    ? (tripSoon ? defiOfDay(today, 0, TRIP_DEFIS) : defiOfDay(today))
+    : defiOfDay(today, offset, [...DEFIS, ...customDefis]);
 
   const flames = useMemo(() => {
     const of = (id: string, since?: string) => {
@@ -46,6 +57,22 @@ export default function Accueil() {
   return (
     <section className="tab">
       <Birthday isGaia={plain(me.first_name) === 'gaia'} now={now} />
+
+      {trip && (
+        <Link href={'/projets/' + trip.id} className="card countdown">
+          {trip.left > 0 ? (
+            <>
+              <span className="big">{trip.left}</span>
+              <span><b>jour{trip.left > 1 ? 's' : ''} avant {trip.place}</b><br /><span className="small muted">{trip.title}</span></span>
+            </>
+          ) : (
+            <>
+              <span className="big" aria-hidden="true">🧳</span>
+              <span><b>{trip.left === 0 ? "C'est le grand départ" : "C'est les vacances"} à {trip.place} !</b><br /><span className="small muted">{trip.title}</span></span>
+            </>
+          )}
+        </Link>
+      )}
 
       <div className="block">
         <h3>Les flammes</h3>
@@ -70,7 +97,7 @@ export default function Accueil() {
       </div>
 
       <div className="defi">
-        <h3>Défi du jour</h3>
+        <h3>{tripSoon && offset === 0 ? 'Défi spécial départ' : 'Défi du jour'}</h3>
         <div className="txt">{defi}</div>
         <div className="row">
           <button className="btn flame" type="button" onClick={() => camera.current?.click()}>
