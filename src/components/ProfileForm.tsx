@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { supabaseBrowser } from '@/lib/supabase/client';
 import { COLORS, colorVar, type Profile } from '@/lib/people';
 import { browserTz } from '@/lib/time';
+import { geocodeCity } from '@/lib/geo';
 
 /** Création (écran de bienvenue) ou modification (réglages) de son profil. */
 export function ProfileForm({ userId, initial }: { userId: string; initial?: Profile }) {
@@ -34,9 +35,14 @@ export function ProfileForm({ userId, initial }: { userId: string; initial?: Pro
     setError('');
     setMsg('');
     const supabase = supabaseBrowser();
-    const { error } = await supabase.from('profiles').upsert({
-      id: userId, first_name: firstName.trim(), color, city: city.trim(), timezone: tz,
-    });
+    const row = { id: userId, first_name: firstName.trim(), color, city: city.trim(), timezone: tz };
+    // Position de la ville pour le globe, recalculée si la ville change (ou n'a jamais été placée).
+    const cityChanged = row.city !== (initial?.city ?? '') || initial?.lat == null;
+    const place = row.city && cityChanged ? await geocodeCity(row.city) : null;
+    const position = place ? { lat: place.lat, lon: place.lon } : row.city ? {} : { lat: null, lon: null };
+    let { error } = await supabase.from('profiles').upsert({ ...row, ...position });
+    // Colonnes de position pas encore créées dans Supabase : on enregistre quand même le reste.
+    if (error && Object.keys(position).length) ({ error } = await supabase.from('profiles').upsert(row));
     if (error) {
       setBusy(false);
       setError("L'enregistrement n'a pas marché. Réessaie.");

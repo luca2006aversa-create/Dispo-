@@ -7,6 +7,7 @@ import { Dot } from '@/components/Dot';
 import { ConfirmButton } from '@/components/ConfirmButton';
 import { supabaseBrowser } from '@/lib/supabase/client';
 import { compressImage } from '@/lib/compress';
+import { peekPendingPhoto, setPendingPhoto } from '@/lib/pendingPhoto';
 import { defiOfDay, DEFIS } from '@/lib/defis';
 import { dayKey, fmtDay, fmtTime } from '@/lib/time';
 
@@ -24,12 +25,19 @@ function Photos() {
   const { me, byId, photos, groupId, customDefis, now, reload, toast } = useApp();
   const params = useSearchParams();
   const [chosen, setDefi] = useState<string | null>(null);
-  const [file, setFile] = useState<Blob | null>(null);
-  const [preview, setPreview] = useState('');
+  // Photo déjà prise depuis l'accueil (bouton caméra du défi), s'il y en a une.
+  const [file, setFile] = useState<Blob | null>(() => peekPendingPhoto());
+  const [preview, setPreview] = useState(() => {
+    const b = peekPendingPhoto();
+    return b ? URL.createObjectURL(b) : '';
+  });
   const [caption, setCaption] = useState('');
   const [busy, setBusy] = useState(false);
   const [newDefi, setNewDefi] = useState('');
   const fileInput = useRef<HTMLInputElement>(null);
+  const cameraInput = useRef<HTMLInputElement>(null);
+
+  useEffect(() => { setPendingPhoto(null); }, []);
 
   const defi = chosen ?? params.get('defi') ?? defiOfDay(dayKey(now, me.timezone));
 
@@ -79,6 +87,7 @@ function Photos() {
     setPreview('');
     setCaption('');
     if (fileInput.current) fileInput.current.value = '';
+    if (cameraInput.current) cameraInput.current.value = '';
     reload('photos');
   }
 
@@ -120,10 +129,19 @@ function Photos() {
             <button className="btn ghost sm" type="button" onClick={() => setDefi('')}>Sans défi</button>
           </span>
         </div>
-        <label htmlFor="p-file">
-          Ta photo
-          <input ref={fileInput} id="p-file" type="file" accept="image/*" onChange={e => pick(e.target.files?.[0])} />
-        </label>
+        <div className="row">
+          <button className="btn flame" type="button" onClick={() => cameraInput.current?.click()}>
+            📷 Prendre la photo
+          </button>
+          <button className="btn ghost" type="button" onClick={() => fileInput.current?.click()}>
+            Choisir dans la galerie
+          </button>
+        </div>
+        {/* capture : ouvre directement l'appareil photo du téléphone */}
+        <input ref={cameraInput} type="file" accept="image/*" capture="environment" hidden
+          aria-label="Prendre une photo avec l'appareil photo" onChange={e => pick(e.target.files?.[0])} />
+        <input ref={fileInput} type="file" accept="image/*" hidden
+          aria-label="Choisir une photo dans la galerie" onChange={e => pick(e.target.files?.[0])} />
         {/* eslint-disable-next-line @next/next/no-img-element */}
         {preview && <img src={preview} className="preview" alt="Aperçu de ta photo" />}
         <label htmlFor="p-cap">

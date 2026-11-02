@@ -10,12 +10,22 @@ import { commonSlots } from '@/lib/slots';
 import { flame } from '@/lib/flames';
 import { defiOfDay, DEFIS } from '@/lib/defis';
 import { colorVar, plain } from '@/lib/people';
+import { compressImage } from '@/lib/compress';
+import { setPendingPhoto } from '@/lib/pendingPhoto';
 import { dayKey, fmtTime } from '@/lib/time';
 
 export default function Accueil() {
   const { me, members, byId, avails, postedDays, customDefis, now } = useApp();
   const router = useRouter();
   const [offset, setOffset] = useState(0);
+  const camera = useRef<HTMLInputElement>(null);
+
+  // Photo prise ici : on la compresse, puis on ouvre la page Photos avec elle déjà prête.
+  async function shoot(file?: File) {
+    if (!file) return;
+    try { setPendingPhoto(await compressImage(file)); } catch { setPendingPhoto(null); }
+    router.push('/photos?defi=' + encodeURIComponent(defi));
+  }
 
   const today = dayKey(now, me.timezone);
   const defi = offset === 0 ? defiOfDay(today) : defiOfDay(today, offset, [...DEFIS, ...customDefis]);
@@ -63,9 +73,11 @@ export default function Accueil() {
         <h3>Défi du jour</h3>
         <div className="txt">{defi}</div>
         <div className="row">
-          <button className="btn flame" type="button" onClick={() => router.push('/photos?defi=' + encodeURIComponent(defi))}>
-            Je relève le défi
+          <button className="btn flame" type="button" onClick={() => camera.current?.click()}>
+            📷 Je relève le défi
           </button>
+          <input ref={camera} type="file" accept="image/*" capture="environment" hidden
+            aria-label="Prendre la photo du défi avec l'appareil photo" onChange={e => shoot(e.target.files?.[0])} />
           <button className="btn ghost" type="button" onClick={() => setOffset(o => o + 1)}>Un autre</button>
         </div>
       </div>
@@ -91,6 +103,11 @@ export default function Accueil() {
           })}
         </div>
       </div>
+
+      <Link href="/globe" className="card globe-card">
+        <span aria-hidden="true" style={{ fontSize: 30 }}>🌍</span>
+        <span><b>Où est tout le monde ?</b><br /><span className="small muted">Le globe, les distances et l&apos;heure chez chacun</span></span>
+      </Link>
 
       <div className="block">
         <h3>Prochain créneau commun</h3>

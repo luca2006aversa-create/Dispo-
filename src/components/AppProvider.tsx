@@ -5,6 +5,7 @@ import { supabaseBrowser } from '@/lib/supabase/client';
 import type { Member } from '@/lib/people';
 import { AvatarZoom } from './AvatarZoom';
 
+export type Message = { id: string; user_id: string; body: string; created: number };
 export type Avail = { id: string; user_id: string; start: number; end: number; note: string };
 export type Photo = {
   id: string; user_id: string; path: string; url: string; caption: string; challenge: string;
@@ -21,12 +22,17 @@ type Ctx = {
   /** Jours locaux où chaque personne a posté (pour les flammes). */
   postedDays: Record<string, Set<string>>;
   customDefis: string[];
+  /** Derniers messages du chat, du plus ancien au plus récent. */
+  messages: Message[];
+  /** Messages des autres arrivés depuis la dernière visite du chat. */
+  chatUnread: number;
+  markChatSeen: () => void;
   /** Adresse (temporaire) de la photo de profil de chaque personne qui en a une. */
   avatars: Record<string, string>;
   /** Affiche en grand la photo de profil d'une personne. */
   zoomAvatar: (id: string) => void;
   now: number;
-  reload: (what?: 'avails' | 'photos' | 'defis') => Promise<void>;
+  reload: (what?: 'avails' | 'photos' | 'defis' | 'messages') => Promise<void>;
   toast: (msg: string) => void;
 };
 
@@ -40,6 +46,8 @@ export function useAvatar(id?: string) {
 export const useZoomAvatar = () => useContext(AppCtx)?.zoomAvatar;
 
 const PHOTO_LIMIT = 60;
+const MESSAGE_LIMIT = 150;
+const CHAT_SEEN = 'chat-vu';
 
 export function AppProvider({ me, groupId, members, children }: {
   me: Member; groupId: string; members: Member[]; children: React.ReactNode;
@@ -48,6 +56,9 @@ export function AppProvider({ me, groupId, members, children }: {
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [postedDays, setPostedDays] = useState<Record<string, Set<string>>>({});
   const [customDefis, setCustomDefis] = useState<string[]>([]);
+  const [messages, setMessages] = useState<Message[]>([]);
+  // Date de la dernière visite du chat (lue après l'affichage : elle vit dans le navigateur).
+  const [chatSeen, setChatSeen] = useState<number | null>(null);
   const [avatars, setAvatars] = useState<Record<string, string>>({});
   const [zoomed, setZoomed] = useState<string | null>(null);
   const [now, setNow] = useState(() => Date.now());
@@ -97,15 +108,29 @@ export function AppProvider({ me, groupId, members, children }: {
     setCustomDefis((data ?? []).map(d => d.text));
   }, [groupId]);
 
-  const reload = useCallback(async (what?: 'avails' | 'photos' | 'defis') => {
+  const loadMessages = useCallback(async () => {
+    const { data } = await supabaseBrowser().from('messages').select('id, user_id, body, created_at')
+      .eq('group_id', groupId).order('created_at', { ascending: false }).limit(MESSAGE_LIMIT);
+    setMessages((data ?? []).reverse().map(m => ({ id: m.id, user_id: m.user_id, body: m.body, created: Date.parse(m.created_at) })));
+  }, [groupId]);
+
+  const markChatSeen = useCallback(() => {
+    const t = Date.now();
+    setChatSeen(t);
+    try { localStorage.setItem(CHAT_SEEN, String(t)); } catch {}
+  }, []);
+
+  const reload = useCallback(async (what?: 'avails' | 'photos' | 'defis' | 'messages') => {
     if (!what || what === 'avails') await loadAvails();
     if (!what || what === 'photos') await loadPhotos();
     if (!what || what === 'defis') await loadDefis();
-  }, [loadAvails, loadPhotos, loadDefis]);
+    if (!what || what === 'messages') await loadMessages();
+  }, [loadAvails, loadPhotos, loadDefis, loadMessages]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     reload();
+    try { setChatSeen(Number(localStorage.getItem(CHAT_SEEN)) || 0); } catch { setChatSeen(0); }
     const sb = supabaseBrowser();
     const filter = `group_id=eq.${groupId}`;
     const channel = sb.channel(`groupe-${groupId}`)
@@ -113,6 +138,7 @@ export function AppProvider({ me, groupId, members, children }: {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'photos', filter }, () => loadPhotos())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'photo_reactions' }, () => loadPhotos())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'challenges', filter }, () => loadDefis())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'messages', filter }, () => loadMessages())
       .subscribe();
     const tick = setInterval(() => setNow(Date.now()), 30_000);
     // En revenant sur l'app (téléphone sorti de veille), on remet tout à jour.
@@ -123,7 +149,7 @@ export function AppProvider({ me, groupId, members, children }: {
       clearInterval(tick);
       document.removeEventListener('visibilitychange', onVisible);
     };
-  }, [groupId, reload, loadAvails, loadPhotos, loadDefis]);
+  }, [groupId, reload, loadAvails, loadPhotos, loadDefis, loadMessages]);
 
   useEffect(() => {
     const withPhoto = members.filter(m => m.avatar_path);
@@ -136,10 +162,13 @@ export function AppProvider({ me, groupId, members, children }: {
       });
   }, [members]);
 
+  const chatUnread = chatSeen === null ? 0 : messages.filter(m => m.user_id !== me.id && m.created > chatSeen).length;
+
   const value = useMemo<Ctx>(() => ({
     me, groupId, members, byId: Object.fromEntries(members.map(m => [m.id, m])),
-    avails, photos, postedDays, customDefis, avatars, zoomAvatar: setZoomed, now, reload, toast,
-  }), [me, groupId, members, avails, photos, postedDays, customDefis, avatars, now, reload, toast]);
+    avails, photos, postedDays, customDefis, messages, chatUnread, markChatSeen,
+    avatars, zoomAvatar: setZoomed, now, reload, toast,
+  }), [me, groupId, members, avails, photos, postedDays, customDefis, messages, chatUnread, markChatSeen, avatars, now, reload, toast]);
 
   return (
     <AppCtx.Provider value={value}>

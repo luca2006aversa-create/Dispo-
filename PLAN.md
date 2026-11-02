@@ -102,3 +102,17 @@ Objectif : une app en ligne que Gaïa peut ouvrir et installer ce soir, puis on 
 3. Créer un compte Brevo, vérifier ton adresse d'expéditeur, générer une clé SMTP.
 
 Choix validés : connexion par code à 6 chiffres, e-mails via Brevo, compte à rebours = projets décidés + dates libres.
+
+## 7. Projets de vacances : pistes (2 novembre)
+
+Le socle prévu : propositions avec photos, « Ça me tente », commentaires, « On part là ! », puis checklist et compte à rebours. Ce qui le rendrait propre à vous, avec une famille éparpillée entre la France et le Vietnam :
+
+1. **Le lieu le plus juste** : pour chaque proposition, la distance (et un ordre d'idée du trajet) depuis la ville de chacun, grâce aux positions du globe. Repère « le plus équitable » = celui qui minimise le trajet le plus long.
+2. **Les dates communes** : chacun coche ses semaines libres sur un calendrier, l'app surligne celles où tout le monde peut (même logique que les créneaux communs, à la journée).
+3. **Le budget honnête** : coût estimé par personne, transport compris (Luca part de Hanoï), plus les frais partagés pendant le séjour et « qui doit combien à qui » à la fin.
+4. **Qui ramène quoi** : checklist avec une personne attribuée à chaque ligne.
+5. **Le compte à rebours** sur l'accueil, et un défi photo spécial les derniers jours (« montre ta valise »).
+6. **L'album du voyage** : les photos prises pendant le séjour rangées dans le projet, pour en faire un souvenir à la fin.
+7. **Le sondage express** : une question à choix (« Mer ou montagne ? ») qui se vote en un toucher, pratique avec le décalage horaire.
+
+Ordre conseillé : 1 à 4 d'abord (le cœur de la décision), puis 5 à 7.

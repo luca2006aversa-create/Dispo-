@@ -146,7 +146,7 @@ input, select, textarea { font: inherit; font-size: 16px; color: var(--ink); bac
 /* barre d'onglets */
 nav.tabs { position: fixed; left: 0; right: 0; bottom: 0; z-index: 6; background: var(--surface); border-top: 1px solid var(--line);
   padding: 6px max(10px, env(safe-area-inset-right, 0px)) calc(6px + env(safe-area-inset-bottom, 0px)) max(10px, env(safe-area-inset-left, 0px)); display: flex; justify-content: center; }
-nav.tabs .in { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; max-width: 560px; width: 100%; }
+nav.tabs .in { display: grid; grid-template-columns: repeat(6, 1fr); gap: 2px; max-width: 560px; width: 100%; }
 nav.tabs a { display: flex; flex-direction: column; align-items: center; gap: 2px; text-decoration: none; color: var(--muted); font-size: 11px; font-weight: 700; padding: 6px 0; border-radius: 12px; min-height: 48px; }
 nav.tabs a svg { width: 22px; height: 22px; }
 nav.tabs a[aria-current="page"] { color: var(--ink); background: var(--chip); }
@@ -226,3 +226,40 @@ dialog.zoom p { margin: 0; font-size: 18px; }
 }
 @keyframes zoom-in { from { opacity: 0; transform: scale(.6); } }
 @keyframes fondu { from { opacity: 0; } }
+
+/* Chat */
+.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.tab-icon { position: relative; display: inline-flex; }
+.badge { position: absolute; top: -5px; right: -10px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px;
+  background: var(--flame-btn); color: #fff; font-size: 11px; font-weight: 800; line-height: 18px; text-align: center; }
+.chat { gap: 12px; }
+.msgs { display: flex; flex-direction: column; gap: 4px; }
+.day-sep { text-align: center; font-size: 12px; font-weight: 700; color: var(--muted); margin: 12px 0 6px; }
+.msg { display: flex; gap: 8px; align-items: flex-end; margin-top: 6px; }
+.msg.grouped { margin-top: 0; }
+.msg.mine { justify-content: flex-end; }
+.msg-dot { width: 28px; flex: none; }
+.bubble { max-width: 78%; background: var(--surface); border: 1px solid var(--line); border-radius: 18px 18px 18px 6px; padding: 8px 12px 6px; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.msg.mine .bubble { background: var(--flame-btn); border-color: transparent; color: #fff; border-radius: 18px 18px 6px 18px; }
+.bubble .body { white-space: pre-wrap; overflow-wrap: anywhere; }
+.bubble .time { align-self: flex-end; display: inline-flex; align-items: center; gap: 4px; font-size: 11px; opacity: .75; font-variant-numeric: tabular-nums; }
+.msg.mine .x-btn { color: inherit; min-height: 24px; padding: 0 4px; font-size: 11px; }
+.composer { position: sticky; bottom: calc(66px + env(safe-area-inset-bottom, 0px)); z-index: 4; display: flex; gap: 8px; align-items: flex-end;
+  background: var(--bg); padding-block: 8px; }
+.composer textarea { resize: none; max-height: 120px; field-sizing: content; border-radius: 22px; padding-inline: 16px; }
+.composer .btn { border-radius: 50%; width: 46px; padding: 0; flex: none; font-size: 18px; }
+
+/* Globe */
+.globe-wrap { position: relative; width: 100%; max-width: 460px; aspect-ratio: 1; margin: 0 auto; }
+.globe-host { width: 100%; height: 100%; cursor: grab; touch-action: pan-y; }
+.globe-host:active { cursor: grabbing; }
+.globe-host canvas { width: 100%; height: 100%; display: block; }
+.globe-label { position: absolute; bottom: anchor(top); left: anchor(center); translate: -50% -4px; pointer-events: none;
+  display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px 2px 2px; border-radius: 999px; white-space: nowrap;
+  background: var(--surface); border: 1px solid var(--line); font-size: 12px; font-weight: 700;
+  transition: opacity .3s; box-shadow: 0 4px 12px -6px rgba(20, 33, 61, .4); }
+.globe-dist { padding: 2px 8px; background: var(--flame-btn); border-color: transparent; color: #fff; }
+/* Navigateur sans ancrage CSS : on cache les étiquettes, la liste en dessous donne les mêmes infos. */
+@supports not (position-anchor: --a) { .globe-label { display: none; } }
+
+.globe-card { flex-direction: row; align-items: center; gap: 12px; text-decoration: none; color: var(--ink); font-weight: 400; }
