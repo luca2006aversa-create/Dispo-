@@ -1,7 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { LATEST } from '@/lib/changelog';
 import { useApp } from '@/components/AppProvider';
 import { Dot } from '@/components/Dot';
 import { ProfileForm } from '@/components/ProfileForm';
@@ -90,6 +92,17 @@ export default function Reglages() {
           </form>
         )}
       </div>
+
+      <details className="card">
+        <summary><b>✨ Quoi de neuf ?</b> <span className="small muted">(mise à jour du {LATEST.date})</span></summary>
+        <ul className="list" style={{ listStyle: 'none', margin: '10px 0 0', padding: 0 }}>
+          {LATEST.changes.map(c => (
+            <li key={c.title} className="small">
+              {c.emoji} <Link href={c.href}>{c.title}</Link> <span className="muted">· {c.where}</span>
+            </li>
+          ))}
+        </ul>
+      </details>
 
       <div className="block">
         <h3>Installer l&apos;app</h3>

@@ -290,3 +290,16 @@ dialog.zoom p { margin: 0; font-size: 18px; }
 .album img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 6px; background: var(--chip); }
 .countdown { display: flex; align-items: center; gap: 14px; text-decoration: none; color: var(--ink); font-weight: 400; }
 .countdown .big { font-weight: 800; font-size: 44px; line-height: 1; font-variant-numeric: tabular-nums; color: var(--flame-ink); }
+
+/* Quoi de neuf ? */
+dialog.news { border: none; border-radius: 22px; padding: 18px; width: min(92vw, 460px); max-height: 85dvh; overflow: auto;
+  background: var(--surface); color: var(--ink); display: flex; flex-direction: column; gap: 12px; box-shadow: 0 24px 60px rgba(0, 0, 0, .35); }
+dialog.news:not([open]) { display: none; }
+dialog.news::backdrop { background: rgba(10, 14, 24, .6); backdrop-filter: blur(4px); }
+dialog.news ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+dialog.news a { display: flex; gap: 12px; align-items: flex-start; padding: 10px; border-radius: 14px; background: var(--bg); color: var(--ink); text-decoration: none; font-weight: 400; }
+dialog.news .e { font-size: 22px; line-height: 1.2; flex: none; }
+@media (prefers-reduced-motion: no-preference) {
+  dialog.news[open] { animation: zoom-in .4s cubic-bezier(.22, .8, .3, 1); }
+  dialog.news[open]::backdrop { animation: fondu .4s ease-out; }
+}

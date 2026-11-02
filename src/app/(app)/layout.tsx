@@ -8,6 +8,7 @@ import { Dot } from '@/components/Dot';
 import { TabBar } from '@/components/TabBar';
 import { RegisterSW } from '@/components/RegisterSW';
 import { Entrance } from '@/components/Entrance';
+import { WhatsNew } from '@/components/WhatsNew';
 
 export default function AppLayout({ children }: LayoutProps<'/'>) {
   return (
@@ -68,6 +69,7 @@ async function Shell({ children }: { children: React.ReactNode }) {
       <TabBar />
       <RegisterSW />
       <Entrance />
+      <WhatsNew />
     </AppProvider>
   );
 }
