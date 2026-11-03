@@ -48,6 +48,15 @@ function pinElement(p: MapPerson) {
   return el;
 }
 
+/** Cadre la carte pour voir tout le monde (ou la seule personne placée). */
+function frame(m: MapLibreMap, ml: typeof import('maplibre-gl'), people: MapPerson[], duration: number) {
+  if (!people.length) return;
+  if (people.length === 1) { m.easeTo({ center: [people[0].lon, people[0].lat], zoom: 4, duration }); return; }
+  const b = new ml.LngLatBounds();
+  people.forEach(p => b.extend([p.lon, p.lat]));
+  m.fitBounds(b, { padding: 70, maxZoom: 5, duration });
+}
+
 /**
  * Carte 3D en vue globe (MapLibre) : on la tourne, on zoome jusqu'aux villes.
  * Une pastille par personne, des arcs depuis `originId` avec la distance au milieu.
@@ -71,6 +80,8 @@ export function MapGlobe({ people, originId, meId }: { people: MapPerson[]; orig
     import('maplibre-gl').then(ml => {
       if (cancelled || !host.current) return;
       lib.current = ml;
+      // Le worker est servi depuis public/ (voir scripts/copy-maplibre-worker.mjs).
+      ml.setWorkerUrl(`/maplibre-gl-worker.mjs?v=${ml.getVersion()}`);
       const start = origin ?? people[0];
       try {
         m = new ml.Map({
@@ -88,8 +99,15 @@ export function MapGlobe({ people, originId, meId }: { people: MapPerson[]; orig
         return;
       }
       m.addControl(new ml.NavigationControl({ visualizePitch: false }), 'top-right');
+      // Les crédits de la carte restent accessibles (bouton ⓘ) sans masquer la carte au départ.
+      m.on('load', () => host.current?.querySelector('.maplibregl-ctrl-attrib')?.classList.remove('maplibregl-compact-show'));
       m.on('style.load', () => {
         m!.setProjection({ type: 'globe' });
+        // Noms des pays, villes, mers… en français quand ils existent (sinon le nom local).
+        for (const layer of m!.getStyle().layers) {
+          if (layer.type !== 'symbol' || /shield|highway/.test(layer.id) || !m!.getLayoutProperty(layer.id, 'text-field')) continue;
+          m!.setLayoutProperty(layer.id, 'text-field', ['coalesce', ['get', 'name:fr'], ['get', 'name:latin'], ['get', 'name']]);
+        }
         setReady(true);
       });
       map.current = m;
@@ -113,7 +131,8 @@ export function MapGlobe({ people, originId, meId }: { people: MapPerson[]; orig
     const others = origin ? people.filter(p => p.id !== origin.id) : [];
     const lines = others.map(p => greatCircle([origin!.lat, origin!.lon], [p.lat, p.lon]));
     for (const [i, p] of others.entries()) {
-      const mid = lines[i][Math.floor(lines[i].length / 2)];
+      // Étiquettes décalées le long de leur arc pour ne pas se chevaucher quand les arcs sont proches.
+      const mid = lines[i][Math.floor((lines[i].length - 1) * (0.3 + (0.4 * (i + 1)) / (others.length + 1)))];
       const el = document.createElement('div');
       el.className = 'map-km';
       el.textContent = fmtKm(distanceKm([origin!.lat, origin!.lon], [p.lat, p.lon]));
@@ -130,7 +149,7 @@ export function MapGlobe({ people, originId, meId }: { people: MapPerson[]; orig
       m.addLayer({ id: 'arcs', type: 'line', source: 'arcs', layout: { 'line-cap': 'round' },
         paint: { 'line-color': '#FF6B3D', 'line-width': 2.5, 'line-dasharray': [1.5, 1.5], 'line-opacity': 0.9 } });
     }
-    if (origin) m.easeTo({ center: [origin.lon, origin.lat], duration: 1200 });
+    frame(m, ml, people, 1200);
   }, [ready, shape]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Plein écran maison (marche aussi sur iPhone) : gestes libres, sinon deux doigts pour laisser défiler la page.
@@ -145,12 +164,7 @@ export function MapGlobe({ people, originId, meId }: { people: MapPerson[]; orig
   useEffect(() => () => document.documentElement.classList.remove('map-open'), []);
 
   function fitAll() {
-    const m = map.current, ml = lib.current;
-    if (!m || !ml || !people.length) return;
-    if (people.length === 1) { m.flyTo({ center: [people[0].lon, people[0].lat], zoom: 4 }); return; }
-    const b = new ml.LngLatBounds();
-    people.forEach(p => b.extend([p.lon, p.lat]));
-    m.fitBounds(b, { padding: 60, maxZoom: 5, duration: 1500 });
+    if (map.current && lib.current) frame(map.current, lib.current, people, 1500);
   }
   const me = people.find(p => p.id === meId);
 

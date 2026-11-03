@@ -43,3 +43,6 @@ next-env.d.ts
 # outils locaux
 /.graph-indexer
 !.env.example
+
+# copié depuis node_modules avant dev et build
+/public/maplibre-gl-worker.mjs
