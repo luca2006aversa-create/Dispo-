@@ -4,6 +4,13 @@
 
 import type { StyleSpecification, LayerSpecification } from 'maplibre-gl';
 import { FRANCE_POLYGONS } from './france';
+import { VIETNAM_POLYGONS } from './vietnam';
+
+/** Pays mis en avant : points orange, contour, puis vraie carte quand ils remplissent l'écran. */
+const FOCUS = [
+  { id: 'france', polygons: FRANCE_POLYGONS },
+  { id: 'vietnam', polygons: VIETNAM_POLYGONS },
+];
 
 /** À partir de ce zoom, les pointillés laissent place à la carte détaillée… */
 export const DETAIL_Z = 4;
@@ -45,25 +52,22 @@ const stepPattern = (prefix: string) =>
 const fade = (a: number, va: number | string, b: number, vb: number | string) =>
   ['interpolate', ['linear'], ['zoom'], a, va, b, vb] as unknown as number;
 
-/** Le monde entier moins la France : sert à estomper les autres pays quand on est sur la France. */
-function outsideFrance() {
+/** Le monde entier moins les pays mis en avant : sert à estomper les autres pays quand on est sur l'un d'eux. */
+function outsideFocus() {
   const world: [number, number][] = [[-180, -85], [180, -85], [180, 85], [-180, 85], [-180, -85]];
-  const holes = FRANCE_POLYGONS.map(p => [...p[0]].reverse());
+  const holes = FOCUS.flatMap(c => c.polygons.map(p => [...p[0]].reverse()));
   return { type: 'Feature' as const, properties: {}, geometry: { type: 'Polygon' as const, coordinates: [world, ...holes] } };
 }
 
-/** Transforme un style OpenFreeMap (positron ou dark) en globe pointillé avec mise en avant de la France. */
+/** Transforme un style OpenFreeMap (positron ou dark) en globe pointillé avec mise en avant de la France et du Vietnam. */
 export function dottedStyle(base: StyleSpecification, pal: Palette): StyleSpecification {
   const layers: LayerSpecification[] = [];
   const franceDotsOpacity = ['interpolate', ['linear'], ['zoom'], 1.4, 0, 2.2, 1, DETAIL_Z, 1, MAP_Z, 0] as unknown as number;
-  const france: LayerSpecification[] = [
-    // Fond uni sous les points orange : cache les points gris du monde à l'intérieur de la France.
-    { id: 'france-under', type: 'fill', source: 'france', paint: { 'fill-color': pal.page, 'fill-opacity': franceDotsOpacity } },
-    {
-      id: 'france-dots', type: 'fill', source: 'france',
-      paint: { 'fill-pattern': stepPattern('fr'), 'fill-opacity': franceDotsOpacity },
-    },
-  ];
+  const france: LayerSpecification[] = FOCUS.flatMap(c => [
+    // Fond uni sous les points orange : cache les points gris du monde à l'intérieur du pays.
+    { id: `${c.id}-under`, type: 'fill', source: c.id, paint: { 'fill-color': pal.page, 'fill-opacity': franceDotsOpacity } },
+    { id: `${c.id}-dots`, type: 'fill', source: c.id, paint: { 'fill-pattern': stepPattern('fr'), 'fill-opacity': franceDotsOpacity } },
+  ] as LayerSpecification[]);
   let franceAdded = false;
 
   for (const layer of base.layers) {
@@ -98,18 +102,19 @@ export function dottedStyle(base: StyleSpecification, pal: Palette): StyleSpecif
   if (!franceAdded) layers.push(...france);
 
   layers.push(
-    { id: 'outside-france', type: 'fill', source: 'outside-france',
+    { id: 'outside-focus', type: 'fill', source: 'outside-focus',
       paint: { 'fill-color': pal.page, 'fill-opacity': fade(DETAIL_Z, 0, MAP_Z, 0.62) } },
-    { id: 'france-line', type: 'line', source: 'france', layout: { 'line-join': 'round' },
-      paint: { 'line-color': pal.flame, 'line-opacity': fade(1.8, 0, 2.6, 1), 'line-width': fade(3, 1, 8, 2.5) } },
+    ...FOCUS.map(c => ({ id: `${c.id}-line`, type: 'line', source: c.id, layout: { 'line-join': 'round' },
+      paint: { 'line-color': pal.flame, 'line-opacity': fade(1.8, 0, 2.6, 1), 'line-width': fade(3, 1, 8, 2.5) } }) as LayerSpecification),
   );
 
   return {
     ...base,
     sources: {
       ...base.sources,
-      france: { type: 'geojson', data: { type: 'Feature', properties: {}, geometry: { type: 'MultiPolygon', coordinates: FRANCE_POLYGONS } } },
-      'outside-france': { type: 'geojson', data: outsideFrance() },
+      ...Object.fromEntries(FOCUS.map(c => [c.id,
+        { type: 'geojson', data: { type: 'Feature', properties: {}, geometry: { type: 'MultiPolygon', coordinates: c.polygons } } }])),
+      'outside-focus': { type: 'geojson', data: outsideFocus() },
     },
     layers,
   };

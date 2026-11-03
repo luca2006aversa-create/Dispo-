@@ -41,9 +41,28 @@ export function GlobeSection({ lazy = false }: { lazy?: boolean }) {
     return () => io.disconnect();
   }, [near]);
   const router = useRouter();
-  const placed: MapPerson[] = members.filter(m => m.lat != null && m.lon != null)
-    .map(m => ({ id: m.id, first_name: m.first_name, color: m.color, lat: Number(m.lat), lon: Number(m.lon), avatar: avatars[m.id] }));
-  const missing = members.filter(m => m.lat == null || m.lon == null);
+  // Personnes qui ont une ville mais pas encore de position enregistrée : on place leur ville ici,
+  // pour l'affichage (chacun ne peut enregistrer que sa propre position).
+  const [cityPos, setCityPos] = useState<Record<string, { lat: number; lon: number }>>({});
+  const toPlace = members.filter(m => (m.lat == null || m.lon == null) && m.city && !cityPos[m.id]).map(m => `${m.id}|${m.city}`).join(',');
+  useEffect(() => {
+    if (!toPlace) return;
+    let stop = false;
+    Promise.all(toPlace.split(',').map(async x => {
+      const [id, city] = x.split('|');
+      const p = await geocodeCity(city);
+      return p ? [id, { lat: p.lat, lon: p.lon }] as const : null;
+    })).then(found => {
+      if (stop) return;
+      const ok = found.filter((x): x is NonNullable<typeof x> => !!x);
+      if (ok.length) setCityPos(cur => ({ ...cur, ...Object.fromEntries(ok) }));
+    });
+    return () => { stop = true; };
+  }, [toPlace]);
+  const posOf = (m: Member) => (m.lat != null && m.lon != null ? { lat: Number(m.lat), lon: Number(m.lon) } : cityPos[m.id]);
+  const placed: MapPerson[] = members.filter(m => posOf(m))
+    .map(m => ({ id: m.id, first_name: m.first_name, color: m.color, ...posOf(m)!, avatar: avatars[m.id] }));
+  const missing = members.filter(m => !posOf(m));
   const [chosen, setChosen] = useState<string | null>(null);
   const originId = chosen ?? (placed.some(p => p.id === me.id) ? me.id : placed[0]?.id);
   const origin = placed.find(p => p.id === originId);
@@ -82,6 +101,7 @@ export function GlobeSection({ lazy = false }: { lazy?: boolean }) {
         </p>
       </div>
 
+      {!me.city && !me.location_live && <AddCity />}
       <LiveLocationToggle />
 
       {placed.length ? (near ? <MapGlobe people={placed} originId={originId} meId={me.id} /> : <div className="map-wrap" />) : (
@@ -128,9 +148,41 @@ export function GlobeSection({ lazy = false }: { lazy?: boolean }) {
       {missing.length > 0 && (
         <p className="notice" style={{ margin: 0 }}>
           Pas encore sur le globe : {missing.map(m => m.first_name).join(', ')}.
-          Il suffit d&apos;indiquer sa ville dans son profil (Réglages).
+          Il leur suffit d&apos;indiquer leur ville (une carte le leur propose ici même), ou de partager leur position en direct.
         </p>
       )}
     </div>
+  );
+}
+
+/** Carte « Ajoute ta ville » pour qui n'en a pas encore : sans elle, on n'apparaît pas sur la Terre. */
+export function AddCity() {
+  const { me, toast } = useApp();
+  const router = useRouter();
+  const [city, setCity] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  async function save(e: React.FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    const place = await geocodeCity(city.trim());
+    if (!place) { setBusy(false); toast('Ville introuvable : vérifie l’orthographe (ex. « Toulouse »).'); return; }
+    const { error } = await supabaseBrowser().from('profiles')
+      .update({ city: city.trim(), lat: place.lat, lon: place.lon }).eq('id', me.id);
+    setBusy(false);
+    if (error) { toast("Ça n'a pas marché, réessaie."); return; }
+    toast(`Te voilà sur la Terre, à ${place.label} 🌍`);
+    router.refresh();
+  }
+
+  return (
+    <form className="card" onSubmit={save} style={{ borderColor: 'var(--flame)' }}>
+      <b>📍 Ajoute ta ville pour apparaître sur la Terre</b>
+      <div className="row" style={{ flexWrap: 'nowrap' }}>
+        <input aria-label="Ta ville" required maxLength={40} value={city} onChange={e => setCity(e.target.value)} placeholder="Toulouse" />
+        <button className="btn flame sm" type="submit" disabled={busy}>{busy ? '…' : 'OK'}</button>
+      </div>
+      <span className="small muted">Seule la ville est utilisée, pas ta position exacte.</span>
+    </form>
   );
 }

@@ -4,6 +4,7 @@ import { randomBytes } from 'node:crypto';
 import { supabaseAdmin, supabaseServer } from '@/lib/supabase/server';
 import { addMember, findUserIdByEmail, isEmail, joinGroup, normalizeInviteCode } from '@/lib/members';
 import { COLORS, plain } from '@/lib/people';
+import { geocodeCity } from '@/lib/geo';
 
 type Result = { ok: boolean; message?: string };
 
@@ -34,7 +35,7 @@ const isTimeZone = (tz: string) => {
 };
 
 /** Connexion (ou première inscription) avec un prénom et le code d'accès du groupe. */
-export async function loginWithName(name: string, code: string, timezone: string): Promise<Result> {
+export async function loginWithName(name: string, code: string, timezone: string, city = ''): Promise<Result> {
   const firstName = name.trim().replace(/\s+/g, ' ').slice(0, 30);
   const slug = plain(firstName).replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
   if (!slug) return { ok: false, message: 'Écris ton prénom.' };
@@ -73,12 +74,17 @@ export async function loginWithName(name: string, code: string, timezone: string
   if (!(await joinGroup(groupId, userId))) return { ok: false, message: "L'entrée dans le groupe a échoué. Réessaie." };
 
   // Profil créé d'office (prénom, couleur libre, fuseau du téléphone) : on arrive directement dans l'app.
-  const { data: existing } = await admin.from('profiles').select('id').eq('id', userId).maybeSingle();
+  // Ville facultative : elle place la personne sur la Terre (seulement si elle n'en a pas encore).
+  const cleanCity = city.trim().slice(0, 40);
+  const place = cleanCity ? await geocodeCity(cleanCity) : null;
+  const where = place ? { city: cleanCity, lat: place.lat, lon: place.lon } : {};
+  const { data: existing } = await admin.from('profiles').select('id, city').eq('id', userId).maybeSingle();
+  if (existing && !existing.city && place) await admin.from('profiles').update(where).eq('id', userId);
   if (!existing) {
     const used = new Set((profiles ?? []).map(p => p.color));
     const color = COLORS.find(c => !used.has(c.key))?.key ?? 'bleu';
     const { error } = await admin.from('profiles').insert({
-      id: userId, first_name: firstName, color, timezone: isTimeZone(timezone) ? timezone : 'Europe/Paris',
+      id: userId, first_name: firstName, color, timezone: isTimeZone(timezone) ? timezone : 'Europe/Paris', ...where,
     });
     if (error) return { ok: false, message: 'La création du profil a échoué. Réessaie.' };
   }

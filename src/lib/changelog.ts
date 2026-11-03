@@ -6,6 +6,15 @@ export type Release = { id: string; date: string; changes: Change[] };
 
 export const RELEASES: Release[] = [
   {
+    id: '2026-11-04',
+    date: '4 novembre',
+    changes: [
+      { emoji: '🇻🇳', title: 'Le Vietnam en points orange comme la France, avec un bouton VN', where: 'Accueil, tout en bas (boutons sur le côté)', href: '/#globe' },
+      { emoji: '👆', title: 'Un doigt vers la gauche ou la droite fait tourner la Terre', where: 'Accueil, tout en bas', href: '/#globe' },
+      { emoji: '📍', title: 'Ajoute ta ville pour apparaître sur la Terre', where: 'Accueil, tout en bas', href: '/#globe' },
+    ],
+  },
+  {
     id: '2026-11-03',
     date: '3 novembre',
     changes: [

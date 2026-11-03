@@ -20,6 +20,7 @@ function Connexion() {
   // Lien d'invitation : /connexion?invitation=K7QF-3XMA remplit le code tout seul.
   const [access, setAccess] = useState(() => params.get('invitation') ?? '');
   const [name, setName] = useState('');
+  const [city, setCity] = useState('');
   const [mode, setMode] = useState<'name' | 'email'>('name');
   const [email, setEmail] = useState('');
   const [step, setStep] = useState<'email' | 'code'>('email');
@@ -37,7 +38,7 @@ function Connexion() {
     e.preventDefault();
     setBusy(true);
     setError('');
-    const res = await loginWithName(name, access, browserTz());
+    const res = await loginWithName(name, access, browserTz(), city);
     if (!res.ok) {
       setBusy(false);
       setError(res.message ?? 'La connexion a échoué. Réessaie.');
@@ -106,6 +107,11 @@ function Connexion() {
               Ton prénom
               <input id="name" required maxLength={30} autoComplete="given-name" value={name}
                 onChange={e => setName(e.target.value)} placeholder="Gaïa" />
+            </label>
+            <label htmlFor="city">
+              Ta ville (pour apparaître sur la Terre)
+              <input id="city" maxLength={40} autoComplete="address-level2" value={city}
+                onChange={e => setCity(e.target.value)} placeholder="Toulouse" />
             </label>
             <label htmlFor="access">
               Code d&apos;accès

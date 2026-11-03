@@ -318,6 +318,10 @@ dialog.news .e { font-size: 22px; line-height: 1.2; flex: none; }
 .map-host { width: 100vw; margin-left: calc(50% - 50vw); height: min(100vw, 78dvh); background: transparent; }
 @media (min-width: 600px) { .map-host { width: 100%; margin-left: 0; height: min(560px, 78dvh); } }
 .map-host .maplibregl-ctrl-attrib { background: color-mix(in srgb, var(--surface) 70%, transparent); }
+/* Un doigt : gauche/droite tourne la Terre (géré par l'app), haut/bas fait défiler la page. Plein écran : tout pour la carte. */
+.map-host, .map-host .maplibregl-canvas-container, .map-host canvas { touch-action: pan-y !important; cursor: grab; }
+.map-host:active { cursor: grabbing; }
+.map-wrap.full .map-host, .map-wrap.full .map-host .maplibregl-canvas-container, .map-wrap.full .map-host canvas { touch-action: none !important; }
 .map-wrap.full { position: fixed; inset: 0; z-index: 40; background: var(--bg); padding: calc(10px + env(safe-area-inset-top, 0px)) 10px calc(10px + env(safe-area-inset-bottom, 0px)); }
 .map-wrap.full .map-host { flex: 1; width: 100%; margin-left: 0; height: auto; }
 html.map-open nav.tabs { display: none; }

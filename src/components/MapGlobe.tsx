@@ -8,6 +8,7 @@ import { colorVar } from '@/lib/people';
 import { distanceKm, fmtKm, greatCircle } from '@/lib/geo';
 import { DOT_STEPS, MAP_Z, PALETTE, dotImage, dottedStyle } from '@/lib/mapStyle';
 import { FRANCE_BOUNDS } from '@/lib/france';
+import { VIETNAM_BOUNDS } from '@/lib/vietnam';
 
 // Centre de la France métropolitaine : le bouton FR y amène, au niveau où la vraie carte remplace les points.
 const FRANCE_CENTER: [number, number] = [(FRANCE_BOUNDS[0][0] + FRANCE_BOUNDS[1][0]) / 2, (FRANCE_BOUNDS[0][1] + FRANCE_BOUNDS[1][1]) / 2];
@@ -103,7 +104,9 @@ export function MapGlobe({ people, originId, meId }: { people: MapPerson[]; orig
           center: start ? [start.lon, start.lat] : [20, 30],
           zoom: 1.2,
           maxZoom: 13,
-          cooperativeGestures: true,
+          // Dans la page : rotation au doigt gérée plus bas, la molette fait défiler la page.
+          dragPan: false,
+          scrollZoom: false,
           attributionControl: { compact: true },
           locale: LOCALE,
         });
@@ -170,16 +173,76 @@ export function MapGlobe({ people, originId, meId }: { people: MapPerson[]; orig
     frame(m, ml, people, 1200);
   }, [ready, shape]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Plein écran maison (marche aussi sur iPhone) : gestes libres, sinon deux doigts pour laisser défiler la page.
+  // Plein écran maison (marche aussi sur iPhone) : tous les gestes de la carte.
+  // Dans la page : notre propre rotation (ci-dessous), pour que la page continue de défiler.
   useEffect(() => {
     const m = map.current;
     if (!m) return;
-    if (full) m.cooperativeGestures.disable(); else m.cooperativeGestures.enable();
+    if (full) { m.dragPan.enable(); m.scrollZoom.enable(); } else { m.dragPan.disable(); m.scrollZoom.disable(); }
     const t = setTimeout(() => m.resize(), 50);
     document.documentElement.classList.toggle('map-open', full);
     return () => clearTimeout(t);
   }, [full, ready]);
   useEffect(() => () => document.documentElement.classList.remove('map-open'), []);
+
+  // Rotation de la Terre dans la page : un doigt (ou la souris) qui glisse à gauche ou à droite la fait tourner,
+  // la Terre suit le doigt et continue un peu sur sa lancée. Au doigt, haut/bas reste le défilement de la page
+  // (touch-action: pan-y) ; à la souris, haut/bas incline la Terre. Deux doigts : zoom (géré par la carte).
+  useEffect(() => {
+    const el = host.current, m = map.current;
+    if (!el || !m || full) return;
+    const pointers = new Set<number>();
+    let last: { x: number; y: number; t: number } | null = null;
+    // Derniers déplacements (degrés, instant) : la vitesse au lâcher est mesurée sur les 100 dernières ms.
+    let trail: { lon: number; lat: number; t: number }[] = [];
+    // Environ la vitesse du doigt à la surface du globe (un peu moins, pour garder le contrôle).
+    const degPerPx = () => (0.75 * 360) / (512 * 2 ** m.getZoom()) / Math.max(0.35, Math.cos((m.getCenter().lat * Math.PI) / 180));
+
+    const down = (e: PointerEvent) => {
+      if (e.button !== 0) return;
+      pointers.add(e.pointerId);
+      if (pointers.size > 1) { last = null; return; } // deux doigts : c'est un zoom
+      m.stop();
+      last = { x: e.clientX, y: e.clientY, t: e.timeStamp };
+      trail = [];
+    };
+    const move = (e: PointerEvent) => {
+      if (!last || pointers.size > 1 || !pointers.has(e.pointerId)) return;
+      const k = degPerPx();
+      const dLon = -(e.clientX - last.x) * k;
+      const dLat = e.pointerType === 'mouse' ? (e.clientY - last.y) * k * 0.7 : 0;
+      const c = m.getCenter();
+      m.jumpTo({ center: [c.lng + dLon, Math.max(-75, Math.min(75, c.lat + dLat))] });
+      trail.push({ lon: dLon, lat: dLat, t: e.timeStamp });
+      trail = trail.filter(p => e.timeStamp - p.t < 100);
+      last = { x: e.clientX, y: e.clientY, t: e.timeStamp };
+    };
+    const up = (e: PointerEvent) => {
+      pointers.delete(e.pointerId);
+      if (!last) return;
+      const recent = trail.filter(p => e.timeStamp - p.t < 100);
+      last = null;
+      if (!recent.length) return;
+      // Élan : la Terre continue un peu sur sa lancée (au plus un quart de tour), puis s'arrête en douceur.
+      const span = Math.max(16, e.timeStamp - recent[0].t);
+      const clamp = (v: number, max: number) => Math.max(-max, Math.min(max, v));
+      const glideLon = clamp((recent.reduce((a, p) => a + p.lon, 0) / span) * 220, 90);
+      const glideLat = clamp((recent.reduce((a, p) => a + p.lat, 0) / span) * 220, 20);
+      if (Math.abs(glideLon) < 1 && Math.abs(glideLat) < 1) return;
+      const c = m.getCenter();
+      m.easeTo({ center: [c.lng + glideLon, clamp(c.lat + glideLat, 75)], duration: 900, easing: t => 1 - (1 - t) ** 3 });
+    };
+    el.addEventListener('pointerdown', down);
+    el.addEventListener('pointermove', move);
+    el.addEventListener('pointerup', up);
+    el.addEventListener('pointercancel', up);
+    return () => {
+      el.removeEventListener('pointerdown', down);
+      el.removeEventListener('pointermove', move);
+      el.removeEventListener('pointerup', up);
+      el.removeEventListener('pointercancel', up);
+    };
+  }, [full, ready]);
 
   function fitAll() {
     if (map.current && lib.current) frame(map.current, lib.current, people, 1500);
@@ -204,6 +267,7 @@ export function MapGlobe({ people, originId, meId }: { people: MapPerson[]; orig
           <button type="button" aria-label="Voir tout le monde" onClick={fitAll}>🌍</button>
           {me && <button type="button" aria-label="Aller sur moi" onClick={() => m?.flyTo({ center: [me.lon, me.lat], zoom: 9, duration: 2000 })}>📍</button>}
           <button type="button" aria-label="Aller sur la France" onClick={() => m?.flyTo({ center: FRANCE_CENTER, zoom: MAP_Z + 0.15, duration: 2400 })}>FR</button>
+          <button type="button" aria-label="Aller sur le Vietnam" onClick={() => m?.fitBounds(VIETNAM_BOUNDS, { padding: 16, duration: 2400 })}>VN</button>
           <button type="button" aria-label={full ? 'Fermer le plein écran' : 'Plein écran'} className={full ? 'on' : ''} onClick={() => setFull(f => !f)}>
             {full ? '✕' : '⤢'}
           </button>
