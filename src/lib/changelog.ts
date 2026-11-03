@@ -9,7 +9,7 @@ export const RELEASES: Release[] = [
     id: '2026-11-03',
     date: '3 novembre',
     changes: [
-      { emoji: '🌍', title: 'La Terre en fond d’écran, et tout en bas de l’accueil une carte 3D à tourner et zoomer jusqu’aux villes', where: 'Accueil, tout en bas', href: '/#globe' },
+      { emoji: '🌍', title: 'La Terre en fond d’écran et, tout en bas de l’accueil, un globe en pointillés à tourner et zoomer : la France apparaît en points orange, puis devient sa vraie carte', where: 'Accueil, tout en bas (boutons sur le côté)', href: '/#globe' },
       { emoji: '📍', title: 'Position en direct sur le globe (au choix de chacun)', where: 'Globe ou Réglages › Partager ma position en direct', href: '/globe' },
     ],
   },
