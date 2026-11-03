@@ -11,6 +11,10 @@ export type Profile = {
   /** Position de sa ville (arrondie), pour le globe. */
   lat?: number | null;
   lon?: number | null;
+  /** La personne partage la position de son téléphone (sinon : celle de sa ville). */
+  location_live?: boolean;
+  /** Dernière mise à jour de la position en direct. */
+  location_at?: string | null;
 };
 
 export type Member = Profile & { role: 'admin' | 'member'; joined_at: string };

@@ -8,7 +8,15 @@ import { Dot } from '@/components/Dot';
 import { Globe, type GlobePerson } from '@/components/Globe';
 import { supabaseBrowser } from '@/lib/supabase/client';
 import { distanceKm, fmtKm, geocodeCity } from '@/lib/geo';
-import { fmtTime, tzOffset } from '@/lib/time';
+import { fmtAgo, fmtTime, tzOffset } from '@/lib/time';
+import { LiveLocationToggle } from '@/components/LiveLocation';
+import type { Member } from '@/lib/people';
+
+/** « 📍 en direct · il y a 5 min » ou « 🏙️ Toulouse » : d'où vient la position affichée. */
+function source(m: Member, now: number) {
+  if (m.location_live) return `📍 en direct${m.location_at ? ' · ' + fmtAgo(Date.parse(m.location_at), now) : ''}`;
+  return m.city ? `🏙️ ${m.city}` : '';
+}
 
 /** « même heure », « +6 h », « −1 h 30 » : décalage de `b` par rapport à `a`. */
 function shift(a: string, b: string, now: number) {
@@ -32,7 +40,7 @@ export default function GlobePage() {
   // Ma ville n'est pas encore placée (profil créé avant le globe) : on la place une fois, tout seul.
   const tried = useRef(false);
   useEffect(() => {
-    if (tried.current || me.lat != null || !me.city) return;
+    if (tried.current || me.lat != null || me.location_live || !me.city) return;
     tried.current = true;
     geocodeCity(me.city).then(async place => {
       if (!place) return;
@@ -57,8 +65,10 @@ export default function GlobePage() {
     <section className="tab">
       <div className="block">
         <h1>Où est tout le monde ?</h1>
-        <p className="small muted" style={{ margin: 0 }}>Fais tourner le globe du doigt. Les distances sont à vol d&apos;oiseau, entre les villes.</p>
+        <p className="small muted" style={{ margin: 0 }}>Fais tourner le globe du doigt. Les distances sont à vol d&apos;oiseau, depuis la position en direct de ceux qui la partagent, sinon depuis leur ville.</p>
       </div>
+
+      <LiveLocationToggle />
 
       {placed.length ? <Globe people={placed} originId={originId} /> : (
         <div className="empty">
@@ -84,7 +94,7 @@ export default function GlobePage() {
                 <div key={p.id} className="item">
                   <Dot p={m} size={32} zoom />
                   <div className="grow">
-                    <b>{m.first_name}</b>{m.city && <span className="small muted"> · {m.city}</span>}
+                    <b>{m.first_name}</b>{source(m, now) && <span className="small muted"> · {source(m, now)}</span>}
                     <div className="small muted">
                       {fmtTime(now, m.timezone)} chez {m.first_name} ({shift(originMember.timezone, m.timezone, now)})
                     </div>

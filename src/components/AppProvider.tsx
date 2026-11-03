@@ -1,6 +1,7 @@
 'use client';
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { supabaseBrowser } from '@/lib/supabase/client';
 import type { Member } from '@/lib/people';
 import { AvatarZoom } from './AvatarZoom';
@@ -68,6 +69,8 @@ export function AppProvider({ me, groupId, members, children }: {
   const [now, setNow] = useState(() => Date.now());
   const [toastMsg, setToastMsg] = useState('');
   const toastTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const router = useRouter();
+  const profileTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   const toast = useCallback((msg: string) => {
     setToastMsg(msg);
@@ -159,6 +162,11 @@ export function AppProvider({ me, groupId, members, children }: {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'photo_reactions' }, () => loadPhotos())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'challenges', filter }, () => loadDefis())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'messages', filter }, () => loadMessages())
+      // Un profil a changé (position en direct, photo…) : les membres sont relus côté serveur.
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'profiles' }, () => {
+        clearTimeout(profileTimer.current);
+        profileTimer.current = setTimeout(() => router.refresh(), 1000);
+      })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'projects', filter }, () => loadProjects())
       .subscribe();
     const tick = setInterval(() => setNow(Date.now()), 30_000);
@@ -170,7 +178,7 @@ export function AppProvider({ me, groupId, members, children }: {
       clearInterval(tick);
       document.removeEventListener('visibilitychange', onVisible);
     };
-  }, [groupId, reload, loadAvails, loadPhotos, loadDefis, loadMessages, loadProjects]);
+  }, [groupId, reload, loadAvails, loadPhotos, loadDefis, loadMessages, loadProjects, router]);
 
   useEffect(() => {
     const withPhoto = members.filter(m => m.avatar_path);

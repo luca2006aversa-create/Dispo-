@@ -9,6 +9,7 @@ import { TabBar } from '@/components/TabBar';
 import { RegisterSW } from '@/components/RegisterSW';
 import { Entrance } from '@/components/Entrance';
 import { WhatsNew } from '@/components/WhatsNew';
+import { LiveLocationTracker } from '@/components/LiveLocation';
 
 export default function AppLayout({ children }: LayoutProps<'/'>) {
   return (
@@ -70,6 +71,7 @@ async function Shell({ children }: { children: React.ReactNode }) {
       <RegisterSW />
       <Entrance />
       <WhatsNew />
+      <LiveLocationTracker />
     </AppProvider>
   );
 }

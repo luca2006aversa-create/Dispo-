@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { LATEST } from '@/lib/changelog';
+import { LATEST, RELEASES } from '@/lib/changelog';
 import { useApp } from '@/components/AppProvider';
 import { Dot } from '@/components/Dot';
 import { ProfileForm } from '@/components/ProfileForm';
@@ -11,6 +11,7 @@ import { supabaseBrowser } from '@/lib/supabase/client';
 import { invite } from './actions';
 import { InviteCode } from './InviteCode';
 import { AvatarPicker } from './AvatarPicker';
+import { LiveLocationToggle } from '@/components/LiveLocation';
 
 type Theme = 'auto' | 'light' | 'dark';
 
@@ -55,6 +56,7 @@ export default function Reglages() {
       <div className="block">
         <h1>Mon profil</h1>
         <AvatarPicker />
+        <LiveLocationToggle />
         <ProfileForm userId={me.id} initial={me} />
       </div>
 
@@ -96,7 +98,7 @@ export default function Reglages() {
       <details className="card">
         <summary><b>✨ Quoi de neuf ?</b> <span className="small muted">(mise à jour du {LATEST.date})</span></summary>
         <ul className="list" style={{ listStyle: 'none', margin: '10px 0 0', padding: 0 }}>
-          {LATEST.changes.map(c => (
+          {RELEASES.flatMap(rel => rel.changes).map(c => (
             <li key={c.title} className="small">
               {c.emoji} <Link href={c.href}>{c.title}</Link> <span className="muted">· {c.where}</span>
             </li>

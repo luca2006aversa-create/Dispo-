@@ -37,9 +37,9 @@ export function ProfileForm({ userId, initial }: { userId: string; initial?: Pro
     const supabase = supabaseBrowser();
     const row = { id: userId, first_name: firstName.trim(), color, city: city.trim(), timezone: tz };
     // Position de la ville pour le globe, recalculée si la ville change (ou n'a jamais été placée).
-    const cityChanged = row.city !== (initial?.city ?? '') || initial?.lat == null;
+    const cityChanged = !initial?.location_live && (row.city !== (initial?.city ?? '') || initial?.lat == null);
     const place = row.city && cityChanged ? await geocodeCity(row.city) : null;
-    const position = place ? { lat: place.lat, lon: place.lon } : row.city ? {} : { lat: null, lon: null };
+    const position = place ? { lat: place.lat, lon: place.lon } : row.city || initial?.location_live ? {} : { lat: null, lon: null };
     let { error } = await supabase.from('profiles').upsert({ ...row, ...position });
     // Colonnes de position pas encore créées dans Supabase : on enregistre quand même le reste.
     if (error && Object.keys(position).length) ({ error } = await supabase.from('profiles').upsert(row));

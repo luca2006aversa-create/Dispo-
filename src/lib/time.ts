@@ -83,3 +83,13 @@ export function browserTz(): string {
     return 'Europe/Paris';
   }
 }
+
+/** « à l'instant », « il y a 5 min », « il y a 2 h », « il y a 3 j » */
+export function fmtAgo(ts: number, now = Date.now()): string {
+  const min = Math.floor((now - ts) / 60_000);
+  if (min < 1) return "à l'instant";
+  if (min < 60) return `il y a ${min} min`;
+  const h = Math.floor(min / 60);
+  if (h < 24) return `il y a ${h} h`;
+  return `il y a ${Math.floor(h / 24)} j`;
+}

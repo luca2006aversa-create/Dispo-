@@ -19,6 +19,21 @@ export function fmtKm(km: number): string {
   return `${Math.round(km).toLocaleString('fr-FR')} km`;
 }
 
+/** Position du téléphone (avec sa permission), arrondie à 0,001° (environ 100 m). */
+export function currentPosition(): Promise<{ lat: number; lon: number }> {
+  return new Promise((resolve, reject) => {
+    if (!('geolocation' in navigator)) { reject(new Error('indisponible')); return; }
+    navigator.geolocation.getCurrentPosition(
+      p => resolve(roundPos(p.coords.latitude, p.coords.longitude)),
+      reject,
+      { enableHighAccuracy: false, timeout: 20_000, maximumAge: 60_000 },
+    );
+  });
+}
+
+export const roundPos = (lat: number, lon: number) =>
+  ({ lat: Math.round(lat * 1000) / 1000, lon: Math.round(lon * 1000) / 1000 });
+
 /** Cherche une ville (service gratuit Open-Meteo, sans clé). Coordonnées arrondies à 0,01° (environ 1 km). */
 export async function geocodeCity(name: string): Promise<{ lat: number; lon: number; label: string } | null> {
   try {

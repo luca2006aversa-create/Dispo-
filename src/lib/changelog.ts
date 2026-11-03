@@ -6,6 +6,13 @@ export type Release = { id: string; date: string; changes: Change[] };
 
 export const RELEASES: Release[] = [
   {
+    id: '2026-11-03',
+    date: '3 novembre',
+    changes: [
+      { emoji: '📍', title: 'Position en direct sur le globe (au choix de chacun)', where: 'Globe ou Réglages › Partager ma position en direct', href: '/globe' },
+    ],
+  },
+  {
     id: '2026-11-02',
     date: '2 novembre',
     changes: [

@@ -43,3 +43,14 @@ describe('distances', () => {
     expect(fmtKm(9873.4).replace(/\s/g, ' ')).toBe('9 873 km');
   });
 });
+
+describe('âge d’une position', () => {
+  it('dit depuis quand la position date', async () => {
+    const { fmtAgo } = await import('./time');
+    const now = Date.UTC(2026, 10, 3, 12, 0);
+    expect(fmtAgo(now - 20_000, now)).toBe("à l'instant");
+    expect(fmtAgo(now - 5 * 60_000, now)).toBe('il y a 5 min');
+    expect(fmtAgo(now - 125 * 60_000, now)).toBe('il y a 2 h');
+    expect(fmtAgo(now - 3 * 86_400_000, now)).toBe('il y a 3 j');
+  });
+});
