@@ -49,3 +49,30 @@ export async function geocodeCity(name: string): Promise<{ lat: number; lon: num
     return null;
   }
 }
+
+/**
+ * Points d'un arc de grand cercle de `a` à `b` (en [lon, lat], pour les cartes), longitudes « déroulées »
+ * pour qu'un arc qui traverse la ligne de changement de date ne fasse pas le tour du monde à l'envers.
+ */
+export function greatCircle(a: LatLon, b: LatLon, steps = 64): [number, number][] {
+  const [la1, lo1, la2, lo2] = [a[0], a[1], b[0], b[1]].map(rad);
+  const d = 2 * Math.asin(Math.sqrt(Math.sin((la2 - la1) / 2) ** 2 + Math.cos(la1) * Math.cos(la2) * Math.sin((lo2 - lo1) / 2) ** 2));
+  const out: [number, number][] = [];
+  for (let i = 0; i <= steps; i++) {
+    const f = i / steps;
+    let lat: number, lon: number;
+    if (d < 1e-9) { lat = a[0]; lon = a[1]; } else {
+      const A = Math.sin((1 - f) * d) / Math.sin(d), B = Math.sin(f * d) / Math.sin(d);
+      const x = A * Math.cos(la1) * Math.cos(lo1) + B * Math.cos(la2) * Math.cos(lo2);
+      const y = A * Math.cos(la1) * Math.sin(lo1) + B * Math.cos(la2) * Math.sin(lo2);
+      const z = A * Math.sin(la1) + B * Math.sin(la2);
+      lat = (Math.atan2(z, Math.hypot(x, y)) * 180) / Math.PI;
+      lon = (Math.atan2(y, x) * 180) / Math.PI;
+    }
+    const prev = out[out.length - 1];
+    if (prev) while (lon - prev[0] > 180) lon -= 360;
+    if (prev) while (prev[0] - lon > 180) lon += 360;
+    out.push([lon, lat]);
+  }
+  return out;
+}

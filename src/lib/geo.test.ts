@@ -54,3 +54,29 @@ describe('âge d’une position', () => {
     expect(fmtAgo(now - 3 * 86_400_000, now)).toBe('il y a 3 j');
   });
 });
+
+describe('arcs de grand cercle', () => {
+  it('part du premier point et arrive au second', async () => {
+    const { greatCircle } = await import('./geo');
+    const pts = greatCircle([43.6, 1.44], [21.03, 105.85], 32);
+    expect(pts).toHaveLength(33);
+    expect(pts[0][0]).toBeCloseTo(1.44, 6);
+    expect(pts[0][1]).toBeCloseTo(43.6, 6);
+    expect(pts[32][0]).toBeCloseTo(105.85, 6);
+    expect(pts[32][1]).toBeCloseTo(21.03, 6);
+  });
+
+  it("passe par le milieu sur l'équateur", async () => {
+    const { greatCircle } = await import('./geo');
+    const mid = greatCircle([0, 0], [0, 90], 2)[1];
+    expect(mid[0]).toBeCloseTo(45, 6);
+    expect(mid[1]).toBeCloseTo(0, 6);
+  });
+
+  it('ne fait pas le tour du monde en traversant la ligne de changement de date', async () => {
+    const { greatCircle } = await import('./geo');
+    const pts = greatCircle([0, 170], [0, -170], 4);
+    for (let i = 1; i < pts.length; i++) expect(Math.abs(pts[i][0] - pts[i - 1][0])).toBeLessThan(10);
+    expect(pts[4][0]).toBeCloseTo(190, 6);
+  });
+});

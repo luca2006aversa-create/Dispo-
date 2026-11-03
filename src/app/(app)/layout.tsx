@@ -10,6 +10,7 @@ import { RegisterSW } from '@/components/RegisterSW';
 import { Entrance } from '@/components/Entrance';
 import { WhatsNew } from '@/components/WhatsNew';
 import { LiveLocationTracker } from '@/components/LiveLocation';
+import { BackgroundGlobe } from '@/components/BackgroundGlobe';
 
 export default function AppLayout({ children }: LayoutProps<'/'>) {
   return (
@@ -57,6 +58,7 @@ async function Shell({ children }: { children: React.ReactNode }) {
 
   return (
     <AppProvider me={me} groupId={groupId} members={members}>
+      <BackgroundGlobe />
       <div className="wrap">
         <header className="top">
           <Link href="/" className="logo" aria-label="Dispo ? (accueil)">Dispo<span className="q">?</span></Link>

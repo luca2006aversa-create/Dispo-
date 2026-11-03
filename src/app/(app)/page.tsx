@@ -13,6 +13,7 @@ import { daysUntil } from '@/lib/projects';
 import { colorVar, plain } from '@/lib/people';
 import { compressImage } from '@/lib/compress';
 import { setPendingPhoto } from '@/lib/pendingPhoto';
+import { GlobeSection } from '@/components/GlobeSection';
 import { dayKey, fmtTime } from '@/lib/time';
 
 export default function Accueil() {
@@ -20,6 +21,32 @@ export default function Accueil() {
   const router = useRouter();
   const [offset, setOffset] = useState(0);
   const camera = useRef<HTMLInputElement>(null);
+  const finale = useRef<HTMLDivElement>(null);
+
+  // En arrivant en bas de l'accueil, le globe de fond rapetisse et s'efface pendant que la carte
+  // interactive passe au premier plan : --fin va de 0 (section pas encore visible) à 1 (section en haut).
+  useEffect(() => {
+    const root = document.documentElement;
+    let frame = 0;
+    const update = () => {
+      frame = 0;
+      const el = finale.current;
+      if (!el) return;
+      const vh = window.innerHeight || 1;
+      const p = Math.min(1, Math.max(0, (vh - el.getBoundingClientRect().top) / (vh * 0.8)));
+      root.style.setProperty('--fin', p.toFixed(3));
+    };
+    const onScroll = () => { if (!frame) frame = requestAnimationFrame(update); };
+    update();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll);
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('resize', onScroll);
+      cancelAnimationFrame(frame);
+      root.style.removeProperty('--fin');
+    };
+  }, []);
 
   // Photo prise ici : on la compresse, puis on ouvre la page Photos avec elle déjà prête.
   async function shoot(file?: File) {
@@ -131,10 +158,11 @@ export default function Accueil() {
         </div>
       </div>
 
-      <Link href="/globe" className="card globe-card">
+      <button type="button" className="card globe-card"
+        onClick={() => document.getElementById('globe')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}>
         <span aria-hidden="true" style={{ fontSize: 30 }}>🌍</span>
-        <span><b>Où est tout le monde ?</b><br /><span className="small muted">Le globe, les distances et l&apos;heure chez chacun</span></span>
-      </Link>
+        <span><b>Où est tout le monde ?</b><br /><span className="small muted">Descends tout en bas : la Terre, les distances, l&apos;heure chez chacun</span></span>
+      </button>
 
       <div className="block">
         <h3>Prochain créneau commun</h3>
@@ -143,6 +171,10 @@ export default function Accueil() {
         ) : (
           <div className="empty">Aucun créneau commun pour l&apos;instant. <Link href="/dispos">Ajoute une dispo</Link>.</div>
         )}
+      </div>
+
+      <div id="globe" ref={finale} className="finale">
+        <GlobeSection lazy />
       </div>
     </section>
   );
