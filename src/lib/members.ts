@@ -16,7 +16,10 @@ export function normalizeInviteCode(input: string): string {
   return c.length === 8 ? `${c.slice(0, 4)}-${c.slice(4)}` : c;
 }
 
-export const isEmail = (s: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s);
+/** Domaine des adresses fictives des comptes « prénom + code d'accès » (jamais utilisées pour écrire). */
+export const NAME_DOMAIN = '@membres.dispo.app';
+
+export const isEmail =(s: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s);
 
 /**
  * Crée le compte (sans mot de passe) s'il n'existe pas encore et l'ajoute au groupe.

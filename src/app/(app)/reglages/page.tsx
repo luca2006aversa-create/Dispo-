@@ -11,6 +11,7 @@ import { supabaseBrowser } from '@/lib/supabase/client';
 import { invite } from './actions';
 import { InviteCode } from './InviteCode';
 import { AvatarPicker } from './AvatarPicker';
+import { PasswordSetting } from './PasswordSetting';
 import { LiveLocationToggle } from '@/components/LiveLocation';
 
 type Theme = 'auto' | 'light' | 'dark';
@@ -46,7 +47,8 @@ export default function Reglages() {
   }
 
   async function logout() {
-    await supabaseBrowser().auth.signOut();
+    // Seulement cet appareil : les autres (téléphone, app installée…) restent connectés.
+    await supabaseBrowser().auth.signOut({ scope: 'local' });
     router.replace('/connexion');
     router.refresh();
   }
@@ -59,6 +61,8 @@ export default function Reglages() {
         <LiveLocationToggle />
         <ProfileForm userId={me.id} initial={me} />
       </div>
+
+      <PasswordSetting />
 
       <div className="block">
         <h3>Thème</h3>

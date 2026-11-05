@@ -1,12 +1,11 @@
 'use server';
 
-import { randomBytes } from 'node:crypto';
 import { supabaseAdmin, supabaseServer } from '@/lib/supabase/server';
-import { addMember, findUserIdByEmail, isEmail, joinGroup, normalizeInviteCode } from '@/lib/members';
+import { addMember, findUserIdByEmail, isEmail, joinGroup, NAME_DOMAIN, normalizeInviteCode } from '@/lib/members';
 import { COLORS, plain } from '@/lib/people';
 import { geocodeCity } from '@/lib/geo';
 
-type Result = { ok: boolean; message?: string };
+type Result = { ok: boolean; message?: string; needPassword?: boolean };
 
 /** Groupe correspondant à un code d'invitation, s'il est valide. */
 async function groupOfCode(code: string): Promise<string | undefined> {
@@ -27,15 +26,23 @@ export async function joinWithCode(email: string, code: string): Promise<Result>
 
 // Connexion simple, sans e-mail : prénom + code d'accès du groupe.
 // Chaque prénom correspond à un compte interne (adresse fictive, jamais utilisée pour écrire).
-// Temporaire : n'importe qui ayant le code et un prénom du groupe peut entrer sous ce prénom.
-const NAME_DOMAIN = '@membres.dispo.app';
+// Sans mot de passe choisi, n'importe qui ayant le code et un prénom du groupe peut entrer sous ce prénom ;
+// chacun peut s'en protéger en choisissant un mot de passe dans les réglages.
 
 const isTimeZone = (tz: string) => {
   try { new Intl.DateTimeFormat('fr-FR', { timeZone: tz }); return true; } catch { return false; }
 };
 
-/** Connexion (ou première inscription) avec un prénom et le code d'accès du groupe. */
-export async function loginWithName(name: string, code: string, timezone: string, city = ''): Promise<Result> {
+/** Ouvre une session (cookies) sans mot de passe, grâce à un lien de connexion à usage unique créé côté serveur. */
+async function openSession(email: string): Promise<boolean> {
+  const { data, error } = await supabaseAdmin().auth.admin.generateLink({ type: 'magiclink', email });
+  if (error || !data.properties?.hashed_token) return false;
+  const { error: otpError } = await (await supabaseServer()).auth.verifyOtp({ token_hash: data.properties.hashed_token, type: 'email' });
+  return !otpError;
+}
+
+/** Connexion (ou première inscription) avec un prénom et le code d'accès du groupe (et le mot de passe, s'il y en a un). */
+export async function loginWithName(name: string, code: string, timezone: string, city = '', password = ''): Promise<Result> {
   const firstName = name.trim().replace(/\s+/g, ' ').slice(0, 30);
   const slug = plain(firstName).replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
   if (!slug) return { ok: false, message: 'Écris ton prénom.' };
@@ -60,16 +67,24 @@ export async function loginWithName(name: string, code: string, timezone: string
     }
   }
 
-  // Nouveau mot de passe interne à chaque connexion : personne n'a à le connaître.
-  const password = randomBytes(32).toString('hex');
+  // Compte avec un mot de passe choisi dans les réglages : il faut ce mot de passe en plus du code.
+  // Sinon, session ouverte par un lien à usage unique : le mot de passe ne change jamais,
+  // donc les autres appareils déjà connectés le restent.
   let userId = await findUserIdByEmail(email);
   if (userId) {
-    const { error } = await admin.auth.admin.updateUserById(userId, { password });
-    if (error) return { ok: false, message: 'La connexion a échoué. Réessaie.' };
+    const { data } = await admin.auth.admin.getUserById(userId);
+    if (data.user?.app_metadata?.own_password) {
+      if (!password) return { ok: false, needPassword: true, message: 'Tu as choisi un mot de passe : écris-le pour entrer.' };
+      const { error } = await (await supabaseServer()).auth.signInWithPassword({ email, password });
+      if (error) return { ok: false, needPassword: true, message: 'Mot de passe incorrect.' };
+    } else if (!(await openSession(email))) {
+      return { ok: false, message: 'La connexion a échoué. Réessaie dans un instant.' };
+    }
   } else {
-    const { data, error } = await admin.auth.admin.createUser({ email, password, email_confirm: true });
+    const { data, error } = await admin.auth.admin.createUser({ email, email_confirm: true });
     if (error || !data.user) return { ok: false, message: 'La création du compte a échoué. Réessaie.' };
     userId = data.user.id;
+    if (!(await openSession(email))) return { ok: false, message: 'La connexion a échoué. Réessaie dans un instant.' };
   }
   if (!(await joinGroup(groupId, userId))) return { ok: false, message: "L'entrée dans le groupe a échoué. Réessaie." };
 
@@ -89,7 +104,5 @@ export async function loginWithName(name: string, code: string, timezone: string
     if (error) return { ok: false, message: 'La création du profil a échoué. Réessaie.' };
   }
 
-  const { error } = await (await supabaseServer()).auth.signInWithPassword({ email, password });
-  if (error) return { ok: false, message: 'La connexion a échoué. Réessaie dans un instant.' };
   return { ok: true };
 }

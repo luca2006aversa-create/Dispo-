@@ -21,6 +21,8 @@ function Connexion() {
   const [access, setAccess] = useState(() => params.get('invitation') ?? '');
   const [name, setName] = useState('');
   const [city, setCity] = useState('');
+  const [password, setPassword] = useState('');
+  const [needPassword, setNeedPassword] = useState(false);
   const [mode, setMode] = useState<'name' | 'email'>('name');
   const [email, setEmail] = useState('');
   const [step, setStep] = useState<'email' | 'code'>('email');
@@ -38,9 +40,10 @@ function Connexion() {
     e.preventDefault();
     setBusy(true);
     setError('');
-    const res = await loginWithName(name, access, browserTz(), city);
+    const res = await loginWithName(name, access, browserTz(), city, password);
     if (!res.ok) {
       setBusy(false);
+      if (res.needPassword) setNeedPassword(true);
       setError(res.message ?? 'La connexion a échoué. Réessaie.');
       return;
     }
@@ -119,6 +122,13 @@ function Connexion() {
                 value={access} onChange={e => setAccess(e.target.value)} placeholder="K7QF-3XMA"
                 style={{ letterSpacing: '.12em', fontWeight: 700 }} />
             </label>
+            {needPassword && (
+              <label htmlFor="password">
+                Ton mot de passe
+                <input id="password" type="password" required autoFocus autoComplete="current-password"
+                  value={password} onChange={e => setPassword(e.target.value)} />
+              </label>
+            )}
             <button className="btn flame" type="submit" disabled={busy}>
               {busy ? 'Connexion…' : 'Entrer'}
             </button>
