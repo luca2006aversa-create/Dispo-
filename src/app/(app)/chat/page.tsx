@@ -14,6 +14,13 @@ export default function Chat() {
   const end = useRef<HTMLDivElement>(null);
   const first = useRef(true);
 
+  // Si la table du chat n'existe pas (migration pas lancée), on le dit clairement au lieu de rester muet.
+  const [broken, setBroken] = useState('');
+  useEffect(() => {
+    supabaseBrowser().from('messages').select('id', { head: true, count: 'exact' }).eq('group_id', groupId)
+      .then(({ error }) => setBroken(error ? `${error.code ?? ''} ${error.message}`.trim() : ''));
+  }, [groupId, messages.length]);
+
   // Tout ce qui est affiché ici compte comme lu.
   useEffect(() => { markChatSeen(); }, [messages, markChatSeen]);
 
@@ -30,7 +37,7 @@ export default function Chat() {
     setBusy(true);
     const { error } = await supabaseBrowser().from('messages').insert({ group_id: groupId, body });
     setBusy(false);
-    if (error) { toast("Le message n'est pas parti, réessaie."); return; }
+    if (error) { setBroken(`${error.code ?? ''} ${error.message}`.trim()); toast("Le message n'est pas parti."); return; }
     setText('');
     reload('messages');
   }
@@ -43,6 +50,15 @@ export default function Chat() {
   return (
     <section className="tab chat">
       <h1>Le chat</h1>
+      {broken && (
+        <div className="card" role="alert">
+          <b>Le chat n&apos;est pas encore prêt côté base de données.</b>
+          <p className="small muted" style={{ margin: '4px 0 0' }}>
+            Luca : lance le fichier <code>supabase/migrations/20261102000001_chat.sql</code> dans Supabase
+            (SQL Editor), puis recharge l&apos;app. Détail : {broken}
+          </p>
+        </div>
+      )}
       <div className="msgs" aria-live="polite">
         {messages.length ? messages.map((m, i) => {
           const who = byId[m.user_id];
