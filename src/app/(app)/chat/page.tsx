@@ -6,6 +6,7 @@ import { Dot } from '@/components/Dot';
 import { ConfirmButton } from '@/components/ConfirmButton';
 import { supabaseBrowser } from '@/lib/supabase/client';
 import { dayKey, fmtDay, fmtTime } from '@/lib/time';
+import { sendMessage } from './actions';
 
 export default function Chat() {
   const { me, byId, messages, groupId, markChatSeen, reload, toast } = useApp();
@@ -35,9 +36,9 @@ export default function Chat() {
     const body = text.trim();
     if (!body) return;
     setBusy(true);
-    const { error } = await supabaseBrowser().from('messages').insert({ group_id: groupId, body });
+    const res = await sendMessage(groupId, body).catch(() => ({ ok: false }));
     setBusy(false);
-    if (error) { setBroken(`${error.code ?? ''} ${error.message}`.trim()); toast("Le message n'est pas parti."); return; }
+    if (!res.ok) { toast("Le message n'est pas parti, réessaie."); return; }
     setText('');
     reload('messages');
   }

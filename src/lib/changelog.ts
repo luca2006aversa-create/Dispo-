@@ -6,6 +6,13 @@ export type Release = { id: string; date: string; changes: Change[] };
 
 export const RELEASES: Release[] = [
   {
+    id: '2026-11-09',
+    date: '9 novembre',
+    changes: [
+      { emoji: '🔔', title: 'Notifications : une alerte sur ton téléphone quand quelqu’un écrit dans le chat', where: 'Accueil (bouton « Activer ») ou Réglages › Notifications', href: '/reglages' },
+    ],
+  },
+  {
     id: '2026-11-04',
     date: '4 novembre',
     changes: [

@@ -13,6 +13,7 @@ import { InviteCode } from './InviteCode';
 import { AvatarPicker } from './AvatarPicker';
 import { PasswordSetting } from './PasswordSetting';
 import { LiveLocationToggle } from '@/components/LiveLocation';
+import { NotificationToggle } from '@/components/Notifications';
 
 type Theme = 'auto' | 'light' | 'dark';
 
@@ -58,6 +59,7 @@ export default function Reglages() {
       <div className="block">
         <h1>Mon profil</h1>
         <AvatarPicker />
+        <NotificationToggle />
         <LiveLocationToggle />
         <ProfileForm userId={me.id} initial={me} />
       </div>

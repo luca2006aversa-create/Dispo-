@@ -14,6 +14,7 @@ import { colorVar, plain } from '@/lib/people';
 import { compressImage } from '@/lib/compress';
 import { setPendingPhoto } from '@/lib/pendingPhoto';
 import { GlobeSection } from '@/components/GlobeSection';
+import { NotificationPrompt } from '@/components/Notifications';
 import { dayKey, fmtTime } from '@/lib/time';
 
 export default function Accueil() {
@@ -84,6 +85,7 @@ export default function Accueil() {
   return (
     <section className="tab">
       <Birthday isGaia={plain(me.first_name) === 'gaia'} now={now} />
+      <NotificationPrompt />
 
       {trip && (
         <Link href={'/projets/' + trip.id} className="card countdown">
