@@ -86,12 +86,12 @@ Dans Supabase, menu **Authentication** :
 
 ## Activer les notifications (une seule fois)
 
-1. Supabase › SQL Editor : lance le fichier .
-2. Ouvre le fichier  (à la racine du projet) : il contient 3 lignes générées pour toi : ,  et .
-3. Vercel › ton projet › Settings › Environment Variables : ajoute ces 3 variables avec les mêmes valeurs (coche « Sensitive » pour ), puis **Redeploy**.
+1. Supabase › SQL Editor : lance le fichier `supabase/migrations/20261109000001_notifications.sql`.
+2. Ouvre le fichier `.env.local` (à la racine du projet) : il contient 3 lignes générées pour toi : `NEXT_PUBLIC_VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` et `VAPID_SUBJECT`.
+3. Vercel › ton projet › Settings › Environment Variables : ajoute ces 3 variables avec les mêmes valeurs (coche « Sensitive » pour `VAPID_PRIVATE_KEY`), puis **Redeploy**.
 4. Sur chaque téléphone : ouvre l'app et appuie sur « Activer les notifications » (ou Réglages › Notifications). Sur iPhone, l'app doit d'abord être ajoutée à l'écran d'accueil.
 
-Ne partage jamais .
+Ne partage jamais `VAPID_PRIVATE_KEY`.
 
 ## Travailler sur le code
 
